@@ -104,7 +104,7 @@ farm lain tetap melihat state mereka sendiri.
   memiliki state yang jelas. Kegagalan sumber tidak ditampilkan sebagai saran
   yang valid.
 - API membaca actor dari session server dan memeriksa membership farm. Satu-satunya
-  Satu-satunya command perubahan yang dipicu pengguna adalah perubahan status
+  command perubahan yang dipicu pengguna adalah perubahan status
   pribadi anggota dengan validasi dan idempotensi. Evaluasi dapat menyimpan
   snapshot rekomendasi; API tidak menyediakan command untuk modul farm lain.
 

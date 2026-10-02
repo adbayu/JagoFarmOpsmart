@@ -2,7 +2,7 @@
 
 **Status:** Desain disetujui pada 2026-10-01; rencana menunggu tinjauan. Belum ada kode P3-04.
 
-> **For agentic workers:** Use `superpowers:executing-plans` after the owner approves this plan. Do not write application code until all source gates below pass. This checkout has no Git repository, so do not create commits.
+> **For agentic workers:** Use `superpowers:executing-plans` after the owner approves this plan. Do not write application code until all source gates below pass. Work in the approved Git worktree; do not push or merge without explicit approval.
 
 **Goal:** Deliver farm-scoped, deterministic recommendations with traceable farm evidence, citations to approved SOP revisions, and completion/dismissal state per member.
 
