@@ -810,6 +810,8 @@ deployment produksi belum diverifikasi.
 
 #### P3-02 — Monitoring dan threshold alerts
 
+**Status: menunggu persetujuan pemilik atas usulan desain (2026-10-02); implementasi belum dimulai.**
+
 - **Files:** query/rule engine di `src/modules/iot/`, integrasi P2-06, dashboard device.
 - **Dependencies:** P3-01; nilai threshold per metric/unit, stale timeout, dan dedupe
   window masih perlu ditetapkan. Semua anggota farm memiliki kewenangan yang sama untuk

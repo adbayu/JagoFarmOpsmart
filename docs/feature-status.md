@@ -11,7 +11,7 @@ schema/kontrak tersedia, tetapi alur pengguna belum terimplementasi.
 | Registry farm        | CRUD farm tersedia; akses operasional setara, Owner menambah dan mengeluarkan anggota                                                                                                                                                                                               |
 | MVP/Core operasional | Farm sampai penjualan dan pembayaran tersedia di UI/API; revenue/HPP/profit memakai policy `finance-mvp-v1` serta menunjukkan alasan bila input belum lengkap                                                                                                                       |
 | Phase 2              | Lingkup lokal yang disetujui selesai: membership, waste/audit, batch maggot, analitik terukur dan perbandingan, posting same-unit, transfer air, serta inbox tersedia; deployment produksi belum diverifikasi                                                                       |
-| Phase 3              | P3-01 sudah diimplementasikan di branch lokal; tes PostgreSQL nyata belum dijalankan karena `TEST_DATABASE_URL` tidak tersedia. P3-02/P3-03/P3-04/P3-05 belum diimplementasikan; belum ada knowledge center RAG, ingestion, atau vector index. Sumber SOP, hak pakai, hosting, retensi, provider, dan biaya masih terbuka |
+| Phase 3              | P3-01 sudah diimplementasikan di branch lokal; tes PostgreSQL nyata belum dijalankan karena `TEST_DATABASE_URL` tidak tersedia. P3-02 menunggu persetujuan desain; implementasi belum dimulai. P3-03/P3-04/P3-05 belum diimplementasikan; belum ada knowledge center RAG, ingestion, atau vector index. Sumber SOP, hak pakai, hosting, retensi, provider, dan biaya masih terbuka |
 
 ## MVP/Core menurut task implementasi
 
