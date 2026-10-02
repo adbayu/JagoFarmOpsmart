@@ -13,6 +13,20 @@ const offsetDateTime = z.iso
     "Expected a valid ISO-8601 timestamp with an offset",
   );
 
+export function compareTelemetryDecimals(left: string, right: string): number {
+  const toScaled = (value: string) => {
+    const negative = value.startsWith("-");
+    const unsigned = negative ? value.slice(1) : value;
+    const [whole = "0", fraction = ""] = unsigned.split(".");
+    const scaled = BigInt(whole) * 1_000_000n + BigInt(fraction.padEnd(6, "0"));
+    return negative ? -scaled : scaled;
+  };
+
+  const a = toScaled(left);
+  const b = toScaled(right);
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 const metricPairSchema = z.strictObject({
   metric: metricKey,
   unit: measurementUnit,
@@ -68,6 +82,19 @@ export const deviceListQuerySchema = z.strictObject({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
+export const alertConfigInputSchema = z
+  .strictObject({
+    unit: measurementUnit,
+    low: decimalValue.nullable(),
+    high: decimalValue.nullable(),
+    staleAfterSeconds: z.number().int().min(60).max(7_776_000).nullable(),
+  })
+  .refine(
+    ({ low, high }) =>
+      low === null || high === null || compareTelemetryDecimals(low, high) < 0,
+    { message: "Batas bawah harus lebih kecil dari batas atas" },
+  );
+
 const deviceStatus = z.enum(["ACTIVE", "REVOKED"]);
 const quality = z.enum(["GOOD", "SUSPECT", "INVALID"]);
 const isoTimestamp = z.iso.datetime({ offset: true });
@@ -110,6 +137,7 @@ export type DeviceMetricsInput = z.infer<typeof deviceMetricsInputSchema>;
 export type ReadingInput = z.infer<typeof readingInputSchema>;
 export type ReadingBatch = z.infer<typeof readingBatchSchema>;
 export type DeviceListQuery = z.infer<typeof deviceListQuerySchema>;
+export type AlertConfigInput = z.infer<typeof alertConfigInputSchema>;
 export type DeviceMetricSummary = z.infer<typeof deviceMetricSummarySchema>;
 export type DeviceSummary = z.infer<typeof deviceSummarySchema>;
 export type DeviceList = z.infer<typeof deviceListSchema>;

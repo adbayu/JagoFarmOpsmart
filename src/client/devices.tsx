@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type FormEvent,
+  type SyntheticEvent,
 } from "react";
 import { Link } from "react-router-dom";
 import type {
@@ -47,6 +48,574 @@ function formatReceivedAt(value: string | null): string {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+type AlertConfigView = {
+  metric: string;
+  unit: string;
+  active: boolean;
+  version: number | null;
+  low: string | null;
+  high: string | null;
+  staleAfterSeconds: number | null;
+  changedByName: string | null;
+  changedAt: string | null;
+  latestReading: {
+    id: string;
+    readingId: string;
+    value: string;
+    quality: "GOOD" | "SUSPECT" | "INVALID";
+    observedAt: string;
+    receivedAt: string;
+  } | null;
+};
+
+type AlertTransitionView = {
+  id: string;
+  type: string;
+  occurredAt: string | null;
+  actorName: string | null;
+  reason: string;
+};
+
+type AlertEpisodeView = {
+  id: string;
+  metric: string;
+  unit: string;
+  condition: string;
+  configVersion: number;
+  openedAt: string | null;
+  resolvedAt: string | null;
+  openReason: string;
+  resolvedReason: string | null;
+  sourceReadingId: string | null;
+  sourceValue: string | null;
+  sourceUnit: string | null;
+  sourceObservedAt: string | null;
+  low: string | null;
+  high: string | null;
+  staleAfterSeconds: number | null;
+  transitions: AlertTransitionView[];
+};
+
+type DeviceAlertResponse = {
+  configs: AlertConfigView[];
+  items: AlertEpisodeView[];
+  activeItems: AlertEpisodeView[];
+  nextCursor: string | null;
+};
+
+type ReadingView = {
+  id: string;
+  readingId: string;
+  metric: string;
+  unit: string;
+  value: string;
+  quality: "GOOD" | "SUSPECT" | "INVALID";
+  observedAt: string;
+  receivedAt: string;
+};
+
+type ReadingResponse = {
+  items: ReadingView[];
+  nextCursor: string | null;
+};
+
+function pairKey(metric: string, unit: string) {
+  return `${metric}\u0000${unit}`;
+}
+
+function formatAge(value: string): string {
+  const ageSeconds = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(value).getTime()) / 1000),
+  );
+  if (ageSeconds < 60) return `${ageSeconds} detik lalu`;
+  if (ageSeconds < 3600) return `${Math.floor(ageSeconds / 60)} menit lalu`;
+  if (ageSeconds < 86_400) return `${Math.floor(ageSeconds / 3600)} jam lalu`;
+  return `${Math.floor(ageSeconds / 86_400)} hari lalu`;
+}
+
+function DeviceMonitoring({
+  device,
+  farmId,
+}: {
+  device: DeviceSummary;
+  farmId: string;
+}) {
+  const [alerts, setAlerts] = useState<DeviceAlertResponse | null>(null);
+  const [readings, setReadings] = useState<Record<string, ReadingResponse>>({});
+  const [loaded, setLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [formValues, setFormValues] = useState<
+    Record<string, { low: string; high: string; stale: string }>
+  >({});
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const alertResult = await request<DeviceAlertResponse>(
+        `/api/farms/${farmId}/devices/${device.id}/alerts?limit=50`,
+      );
+      setAlerts(alertResult);
+      setReadings({});
+      setFormValues(
+        Object.fromEntries(
+          alertResult.configs.map((config) => [
+            pairKey(config.metric, config.unit),
+            {
+              low: config.low ?? "",
+              high: config.high ?? "",
+              stale: config.staleAfterSeconds?.toString() ?? "",
+            },
+          ]),
+        ),
+      );
+      setLoaded(true);
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Gagal memuat monitoring perangkat.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [device.id, device.metrics, farmId]);
+
+  useEffect(() => {
+    if (reloadKey > 0) void load();
+  }, [load, reloadKey]);
+
+  async function loadReadings(metric: string, unit: string, more = false) {
+    const key = pairKey(metric, unit);
+    const current = readings[key];
+    if (pendingKey || (more && !current?.nextCursor) || (!more && current))
+      return;
+    setPendingKey(`readings:${key}`);
+    setError(null);
+    try {
+      const next = await request<ReadingResponse>(
+        `/api/farms/${farmId}/devices/${device.id}/readings?metric=${encodeURIComponent(metric)}&unit=${encodeURIComponent(unit)}&limit=20${more && current?.nextCursor ? `&cursor=${encodeURIComponent(current.nextCursor)}` : ""}`,
+      );
+      setReadings((previous) => ({
+        ...previous,
+        [key]: {
+          items: [...(more ? (current?.items ?? []) : []), ...next.items],
+          nextCursor: next.nextCursor,
+        },
+      }));
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Gagal memuat histori bacaan.",
+      );
+    } finally {
+      setPendingKey(null);
+    }
+  }
+
+  async function loadMoreAlerts() {
+    if (!alerts?.nextCursor || pendingKey) return;
+    setPendingKey("alerts");
+    setError(null);
+    try {
+      const next = await request<DeviceAlertResponse>(
+        `/api/farms/${farmId}/devices/${device.id}/alerts?limit=50&cursor=${encodeURIComponent(alerts.nextCursor)}`,
+      );
+      setAlerts((previous) =>
+        previous
+          ? {
+              ...previous,
+              activeItems: next.activeItems,
+              items: [...previous.items, ...next.items],
+              nextCursor: next.nextCursor,
+            }
+          : next,
+      );
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Gagal memuat histori alert.",
+      );
+    } finally {
+      setPendingKey(null);
+    }
+  }
+
+  async function saveConfig(
+    event: FormEvent<HTMLFormElement>,
+    metric: DeviceMetricSummary,
+  ) {
+    event.preventDefault();
+    const key = pairKey(metric.metric, metric.unit);
+    if (pendingKey) return;
+    const values = formValues[key] ?? { low: "", high: "", stale: "" };
+    setPendingKey(key);
+    setError(null);
+    try {
+      const result = await request<{
+        deviceId: string;
+        metric: string;
+        unit: string;
+      }>(
+        `/api/farms/${farmId}/devices/${device.id}/metrics/${encodeURIComponent(metric.metric)}/alert-config`,
+        "PUT",
+        {
+          unit: metric.unit,
+          low: values.low.trim() || null,
+          high: values.high.trim() || null,
+          staleAfterSeconds: values.stale.trim() ? Number(values.stale) : null,
+        },
+        idempotencyHeader(crypto.randomUUID()),
+      );
+      if (result.deviceId !== device.id)
+        throw new Error("Respons konfigurasi tidak cocok.");
+      await load();
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Gagal menyimpan konfigurasi alert.",
+      );
+    } finally {
+      setPendingKey(null);
+    }
+  }
+
+  const loadOnOpen = (event: SyntheticEvent<HTMLDetailsElement>) => {
+    if (event.currentTarget.open && !loaded && !loading) void load();
+  };
+
+  return (
+    <details className="device-monitoring" onToggle={loadOnOpen}>
+      <summary>Monitoring, alert, dan histori</summary>
+      <div className="device-monitoring-content">
+        {loading && !loaded ? (
+          <p role="status">Memuat bacaan dan riwayat alert…</p>
+        ) : error && !loaded ? (
+          <div className="device-inline-error" role="alert">
+            <span>{error}</span>
+            <button type="button" onClick={() => void load()}>
+              Coba lagi
+            </button>
+          </div>
+        ) : device.metrics.length === 0 ? (
+          <p>Belum ada metric yang dapat ditampilkan.</p>
+        ) : (
+          <>
+            {device.status !== "ACTIVE" && (
+              <p className="device-help">
+                Perangkat sudah dicabut; histori tetap dapat dibaca.
+              </p>
+            )}
+            {error && (
+              <p className="device-feedback error" role="alert">
+                {error}
+              </p>
+            )}
+            {device.metrics.map((metric) => {
+              const key = pairKey(metric.metric, metric.unit);
+              const config = alerts?.configs.find(
+                (item) => pairKey(item.metric, item.unit) === key,
+              );
+              const values = formValues[key] ?? {
+                low: config?.low ?? "",
+                high: config?.high ?? "",
+                stale: config?.staleAfterSeconds?.toString() ?? "",
+              };
+              const history = readings[key];
+              const latest = config?.latestReading;
+              const episodes = [
+                ...(alerts?.activeItems ?? []),
+                ...(alerts?.items.filter((item) => item.resolvedAt !== null) ??
+                  []),
+              ].filter((item) => pairKey(item.metric, item.unit) === key);
+              const metricId = `${device.id}-${metric.metric}-${encodeURIComponent(
+                metric.unit,
+              )}`;
+              const monitorId = `monitor-${metricId}`;
+              const alertHelpId = `alert-help-${metricId}`;
+              return (
+                <section
+                  className="device-monitoring-metric"
+                  key={key}
+                  aria-labelledby={monitorId}
+                >
+                  <header>
+                    <h3 id={monitorId}>
+                      <code>{metric.metric}</code> · {metric.unit}
+                    </h3>
+                    {config?.version ? (
+                      <span>
+                        {config.active
+                          ? `Versi ${config.version}`
+                          : `Nonaktif · versi ${config.version}`}
+                      </span>
+                    ) : (
+                      <span>
+                        {metric.active ? "Belum dikonfigurasi" : "Nonaktif"}
+                      </span>
+                    )}
+                  </header>
+                  <p className="device-current-reading">
+                    Bacaan terbaru:{" "}
+                    {latest ? (
+                      <>
+                        <strong>
+                          {latest.value} {metric.unit}
+                        </strong>{" "}
+                        · {latest.quality} · {formatAge(latest.observedAt)}
+                      </>
+                    ) : (
+                      "belum ada"
+                    )}
+                  </p>
+                  <form
+                    className="device-alert-form"
+                    onSubmit={(event) => void saveConfig(event, metric)}
+                  >
+                    <FormField
+                      id={`alert-${device.id}-${metric.metric}-${metric.unit}-low`}
+                      label={`Batas bawah (${metric.unit})`}
+                    >
+                      <input
+                        inputMode="decimal"
+                        pattern="-?(0|[1-9][0-9]{0,11})(\.[0-9]{1,6})?"
+                        value={values.low}
+                        disabled={!metric.active || device.status !== "ACTIVE"}
+                        onChange={(event) =>
+                          setFormValues((current) => ({
+                            ...current,
+                            [key]: { ...values, low: event.target.value },
+                          }))
+                        }
+                        aria-describedby={alertHelpId}
+                      />
+                    </FormField>
+                    <FormField
+                      id={`alert-${device.id}-${metric.metric}-${metric.unit}-high`}
+                      label={`Batas atas (${metric.unit})`}
+                    >
+                      <input
+                        inputMode="decimal"
+                        pattern="-?(0|[1-9][0-9]{0,11})(\.[0-9]{1,6})?"
+                        value={values.high}
+                        disabled={!metric.active || device.status !== "ACTIVE"}
+                        onChange={(event) =>
+                          setFormValues((current) => ({
+                            ...current,
+                            [key]: { ...values, high: event.target.value },
+                          }))
+                        }
+                        aria-describedby={alertHelpId}
+                      />
+                    </FormField>
+                    <FormField
+                      id={`alert-${device.id}-${metric.metric}-${metric.unit}-stale`}
+                      label="Timeout stale (detik)"
+                    >
+                      <input
+                        inputMode="numeric"
+                        type="number"
+                        min={60}
+                        max={7_776_000}
+                        step={1}
+                        value={values.stale}
+                        disabled={!metric.active || device.status !== "ACTIVE"}
+                        onChange={(event) =>
+                          setFormValues((current) => ({
+                            ...current,
+                            [key]: { ...values, stale: event.target.value },
+                          }))
+                        }
+                      />
+                    </FormField>
+                    <button
+                      type="submit"
+                      disabled={
+                        pendingKey !== null ||
+                        !metric.active ||
+                        device.status !== "ACTIVE"
+                      }
+                    >
+                      {pendingKey === key ? "Menyimpan…" : "Simpan aturan"}
+                    </button>
+                  </form>
+                  <p
+                    className="device-help"
+                    id={alertHelpId}
+                  >
+                    Nilai kosong berarti tidak dipantau. Batas memakai{" "}
+                    {metric.unit} persis; tidak ada konversi satuan. Batas bawah
+                    harus lebih kecil dari batas atas.
+                  </p>
+                  {config && (
+                    <p className="device-help">
+                      Threshold:{" "}
+                      {config.low !== null || config.high !== null
+                        ? "dipantau"
+                        : "Tidak dipantau"}{" "}
+                      · Timeout stale:{" "}
+                      {config.staleAfterSeconds !== null
+                        ? `${config.staleAfterSeconds} detik`
+                        : "Tidak dipantau"}
+                      .
+                    </p>
+                  )}
+                  {config?.version && (
+                    <p className="device-help">
+                      Diubah {config.changedByName ?? "anggota farm"}
+                      {config.changedAt
+                        ? ` · ${formatReceivedAt(config.changedAt)}`
+                        : ""}
+                      . Kesetaraan batas dianggap normal.
+                    </p>
+                  )}
+                  <details
+                    className="device-history-block"
+                    onToggle={(event) => {
+                      if (event.currentTarget.open)
+                        void loadReadings(metric.metric, metric.unit);
+                    }}
+                  >
+                    <summary>Histori bacaan</summary>
+                    {pendingKey === `readings:${key}` && !history ? (
+                      <p role="status">Memuat histori bacaan…</p>
+                    ) : !history?.items.length ? (
+                      <p>Belum ada bacaan untuk metric ini.</p>
+                    ) : (
+                      <ul className="device-reading-history">
+                        {history.items.map((reading) => (
+                          <li key={reading.id}>
+                            <span>
+                              <strong>
+                                {reading.value} {reading.unit}
+                              </strong>
+                              <small>
+                                {formatReceivedAt(reading.observedAt)} ·
+                                diterima {formatReceivedAt(reading.receivedAt)}
+                              </small>
+                            </span>
+                            <span
+                              className={`reading-quality is-${reading.quality.toLowerCase()}`}
+                            >
+                              {reading.quality}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {history?.nextCursor && (
+                      <button
+                        type="button"
+                        disabled={pendingKey !== null}
+                        onClick={() =>
+                          void loadReadings(metric.metric, metric.unit, true)
+                        }
+                      >
+                        {pendingKey === `readings:${key}`
+                          ? "Memuat…"
+                          : "Muat bacaan berikutnya"}
+                      </button>
+                    )}
+                  </details>
+                  <div className="device-history-block">
+                    <h4>Episode alert</h4>
+                    {!episodes.length ? (
+                      <p>
+                        Belum ada alert.{" "}
+                        {config?.version
+                          ? "Aturan aktif akan diperiksa saat bacaan GOOD masuk atau worker stale berjalan."
+                          : "Atur batas atau timeout untuk mulai memantau."}
+                      </p>
+                    ) : (
+                      <ul className="device-alert-history">
+                        {episodes.map((episode) => (
+                          <li
+                            key={episode.id}
+                            className={
+                              episode.resolvedAt ? "is-resolved" : "is-open"
+                            }
+                          >
+                            <div>
+                              <strong>
+                                {episode.condition === "STALE"
+                                  ? "Bacaan stale"
+                                  : episode.condition === "LOW"
+                                    ? "Di bawah batas"
+                                    : "Melewati batas"}
+                              </strong>
+                              <span>
+                                {episode.resolvedAt
+                                  ? `Selesai · ${episode.resolvedReason}`
+                                  : "Sedang aktif"}{" "}
+                                · versi {episode.configVersion}
+                              </span>
+                            </div>
+                            <p>
+                              {episode.sourceValue !== null
+                                ? `Sumber ${episode.sourceValue} ${episode.sourceUnit} · `
+                                : ""}
+                              {formatReceivedAt(
+                                episode.sourceObservedAt ??
+                                  episode.openedAt ??
+                                  "",
+                              )}
+                              {episode.low !== null || episode.high !== null
+                                ? ` · aturan ${episode.low ?? "—"}–${episode.high ?? "—"} ${metric.unit}`
+                                : ""}
+                            </p>
+                            <ol>
+                              {episode.transitions.map((transition) => (
+                                <li key={transition.id}>
+                                  {transition.type === "OPENED"
+                                    ? "Dibuka"
+                                    : transition.type === "RECOVERED"
+                                      ? "Pulih"
+                                      : transition.type}{" "}
+                                  ·{" "}
+                                  {formatReceivedAt(
+                                    transition.occurredAt ?? "",
+                                  )}{" "}
+                                  · {transition.actorName ?? "sistem"}
+                                </li>
+                              ))}
+                            </ol>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </section>
+              );
+            })}
+            {alerts?.nextCursor && (
+              <button
+                type="button"
+                disabled={pendingKey !== null}
+                onClick={() => void loadMoreAlerts()}
+              >
+                {pendingKey === "alerts"
+                  ? "Memuat…"
+                  : "Muat episode alert sebelumnya"}
+              </button>
+            )}
+            <button
+              type="button"
+              className="device-monitoring-refresh"
+              disabled={loading}
+              onClick={() => void load()}
+            >
+              {loading ? "Memuat…" : "Perbarui monitoring"}
+            </button>
+          </>
+        )}
+      </div>
+    </details>
+  );
 }
 
 function DeviceCard({
@@ -180,7 +749,7 @@ function DeviceCard({
   }
 
   return (
-    <article className="device-card">
+    <article className="device-card" id={`device-${device.id}`} tabIndex={-1}>
       <header className="device-card-header">
         <div>
           <h2>{device.name}</h2>
@@ -218,6 +787,7 @@ function DeviceCard({
           ))
         )}
       </ul>
+      <DeviceMonitoring device={device} farmId={farmId} />
       {error && (
         <p className="device-feedback error" role="alert">
           {error}

@@ -1,10 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type { Database, Sql } from "../../server/db.js";
-import type {
-  NotificationEventType,
-  NotificationPayload,
-} from "./contracts.js";
 import { recordInventoryLevelTransitions } from "./stock-events.js";
+import { addOutboxEvent } from "./outbox.js";
+import { materializeStaleAlerts } from "../iot/alerts.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const RETENTION_MS = 90 * DAY_MS;
@@ -17,31 +15,6 @@ type Activity = {
   status: string;
   scheduled_at: string;
 };
-
-async function addOutboxEvent(
-  tx: Sql,
-  event: {
-    farmId: string;
-    eventKey: string;
-    eventType: NotificationEventType;
-    sourceId: string;
-    payload: NotificationPayload;
-  },
-): Promise<void> {
-  await tx.query(
-    `INSERT INTO notification_outbox
-     (id,farm_id,event_key,event_type,source_id,payload)
-     VALUES($1,$2,$3,$4,$5,$6::jsonb) ON CONFLICT(farm_id,event_key) DO NOTHING`,
-    [
-      randomUUID(),
-      event.farmId,
-      event.eventKey,
-      event.eventType,
-      event.sourceId,
-      JSON.stringify(event.payload),
-    ],
-  );
-}
 
 async function materializeScheduleEvents(tx: Sql, now: Date): Promise<void> {
   const nowIso = now.toISOString();
@@ -152,6 +125,7 @@ export async function processNotificationWorkerTick(
   await db.transaction(async (tx) => {
     await materializeScheduleEvents(tx, now);
     await initializeInventoryStates(tx);
+    await materializeStaleAlerts(tx, now);
   });
 
   let deliveryFailed = false;
@@ -184,6 +158,9 @@ export async function processNotificationWorkerTick(
       "DELETE FROM notification_outbox WHERE delivered_at IS NOT NULL AND delivered_at<$1",
       [cutoff],
     );
+    await tx.query("SELECT purge_expired_iot_alert_history($1) AS deleted", [
+      BATCH_SIZE,
+    ]);
     if (!deliveryFailed)
       await tx.query(
         `INSERT INTO notification_worker_state(singleton,last_success_at)

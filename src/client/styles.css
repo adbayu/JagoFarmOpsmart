@@ -2729,6 +2729,183 @@ dialog::backdrop {
   gap: 0.8rem;
   padding-top: 0.55rem;
 }
+.device-monitoring {
+  min-width: 0;
+  margin-top: 0.7rem;
+  border-top: 1px solid var(--line);
+}
+.device-monitoring > summary {
+  min-height: 44px;
+  padding: 0.7rem 0.1rem 0.2rem;
+  color: var(--forest);
+  font-size: 0.84rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.device-monitoring-content {
+  display: grid;
+  min-width: 0;
+  gap: 1rem;
+  padding-top: 0.5rem;
+}
+.device-monitoring-metric {
+  min-width: 0;
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fbfcf9;
+}
+.device-monitoring-metric > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+.device-monitoring-metric h3,
+.device-history-block h4 {
+  min-width: 0;
+  margin: 0;
+  color: var(--forest-deep);
+  font-size: 0.88rem;
+}
+.device-monitoring-metric h3 code {
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+.device-monitoring-metric > header > span {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.device-current-reading {
+  margin: 0.55rem 0 0.8rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.device-current-reading strong {
+  color: var(--forest-deep);
+  font-variant-numeric: tabular-nums;
+}
+.device-alert-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 0.3rem 0.7rem;
+}
+.device-alert-form .form-field {
+  min-width: 0;
+  margin-bottom: 0.3rem;
+}
+.device-alert-form .form-field:nth-child(3) {
+  grid-column: 1;
+}
+.device-alert-form button {
+  justify-self: start;
+  min-height: 42px;
+}
+.device-history-block {
+  min-width: 0;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+.device-history-block > summary {
+  min-height: 40px;
+  padding: 0.55rem 0;
+  color: var(--forest);
+  font-size: 0.8rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.device-history-block > p {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.device-reading-history,
+.device-alert-history {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.device-reading-history li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  background: #f2f6f0;
+  font-size: 0.78rem;
+}
+.device-reading-history li > span:first-child {
+  min-width: 0;
+}
+.device-reading-history strong {
+  color: var(--forest-deep);
+  font-variant-numeric: tabular-nums;
+}
+.device-reading-history small {
+  display: block;
+  margin-top: 0.12rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.reading-quality {
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+.reading-quality.is-good {
+  color: #287345;
+}
+.reading-quality.is-suspect {
+  color: #a36a17;
+}
+.reading-quality.is-invalid {
+  color: #a34236;
+}
+.device-alert-history > li {
+  min-width: 0;
+  padding: 0.65rem;
+  border-left: 3px solid #b16d35;
+  border-radius: 0 8px 8px 0;
+  background: #fbf6ee;
+}
+.device-alert-history > li.is-resolved {
+  border-left-color: #6a8b68;
+  background: #f2f6f0;
+}
+.device-alert-history > li > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.2rem 0.6rem;
+  color: var(--forest-deep);
+  font-size: 0.78rem;
+}
+.device-alert-history > li > div span,
+.device-alert-history > li > p,
+.device-alert-history ol {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.device-alert-history > li > p {
+  margin: 0.3rem 0;
+  overflow-wrap: anywhere;
+}
+.device-alert-history ol {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding-left: 1rem;
+}
+.device-monitoring-refresh {
+  justify-self: start;
+}
 .device-form {
   margin: 0 !important;
   padding-bottom: 0.9rem;
@@ -2811,6 +2988,12 @@ dialog::backdrop {
   }
   .device-card-header {
     align-items: flex-start;
+  }
+  .device-alert-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .device-alert-form .form-field:nth-child(3) {
+    grid-column: auto;
   }
   .device-actions button {
     flex: 1 1 100%;

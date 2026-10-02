@@ -10,6 +10,10 @@ import {
   deviceRenameInputSchema,
 } from "./contracts.js";
 import type { DeviceMetricsInput } from "./contracts.js";
+import {
+  closeDeviceAlertEpisodes,
+  evaluateThresholdAlerts,
+} from "./alerts.js";
 
 type DeviceSecretReceipt = {
   deviceId: string;
@@ -185,15 +189,23 @@ export async function setDeviceMetrics(
       const requestedMetrics = new Set(
         input.metrics.map((metric) => `${metric.metric}\u0000${metric.unit}`),
       );
-      const activeMetrics = await tx.query<{
+      const existingMetrics = await tx.query<{
         metric_key: string;
         measurement_unit: string;
+        active: boolean;
       }>(
-        `SELECT metric_key,measurement_unit FROM farm_device_metric
-         WHERE device_id=$1 AND active=true FOR UPDATE`,
+        `SELECT metric_key,measurement_unit,active FROM farm_device_metric
+         WHERE device_id=$1 FOR UPDATE`,
         [deviceId],
       );
-      for (const metric of activeMetrics.rows) {
+      const previousState = new Map<string, boolean>(
+        existingMetrics.rows.map((metric) => [
+          `${metric.metric_key}\u0000${metric.measurement_unit}`,
+          metric.active,
+        ] as const),
+      );
+      for (const metric of existingMetrics.rows) {
+        if (!metric.active) continue;
         if (
           requestedMetrics.has(
             `${metric.metric_key}\u0000${metric.measurement_unit}`,
@@ -215,6 +227,14 @@ export async function setDeviceMetrics(
           metric: metric.metric_key,
           unit: metric.measurement_unit,
         });
+        await closeDeviceAlertEpisodes(
+          tx,
+          { id: deviceId, farm_id: context.farmId },
+          "METRIC_DISABLED",
+          new Date(),
+          context.actorId,
+          { metric: metric.metric_key, unit: metric.measurement_unit },
+        );
       }
       for (const metric of input.metrics) {
         await tx.query(
@@ -239,6 +259,25 @@ export async function setDeviceMetrics(
           metric.active ? "METRIC_ACTIVATED" : "METRIC_RETIRED",
           { metric: metric.metric, unit: metric.unit },
         );
+        if (!metric.active)
+          await closeDeviceAlertEpisodes(
+            tx,
+            { id: deviceId, farm_id: context.farmId },
+            "METRIC_DISABLED",
+            new Date(),
+            context.actorId,
+            { metric: metric.metric, unit: metric.unit },
+          );
+        else if (
+          previousState.get(`${metric.metric}\u0000${metric.unit}`) === false
+        )
+          await evaluateThresholdAlerts(
+            tx,
+            { id: deviceId, farm_id: context.farmId },
+            [{ metric: metric.metric, unit: metric.unit }],
+            new Date(),
+            context.actorId,
+          );
       }
       return { deviceId, metrics: input.metrics };
     },
@@ -323,6 +362,13 @@ export async function revokeDevice(
                changed_by=$3,changed_at=clock_timestamp()
            WHERE farm_id=$1 AND id=$2`,
           [context.farmId, deviceId, context.actorId],
+        );
+        await closeDeviceAlertEpisodes(
+          tx,
+          { id: deviceId, farm_id: context.farmId },
+          "DEVICE_REVOKED",
+          new Date(),
+          context.actorId,
         );
         await appendDeviceEvent(tx, context, deviceId, "REVOKED", {});
       }

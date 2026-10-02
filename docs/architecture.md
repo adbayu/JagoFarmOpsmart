@@ -162,9 +162,11 @@ belum diverifikasi dan alur pemulihan kata sandi belum tersedia.
   matriks role; hanya Owner yang dapat menambah atau mengeluarkan anggota non-owner.
   `farm.owner_id` tetap menjadi pemilik teknis. Pengeluaran mencabut membership tanpa
   mengubah ledger atau actor historis.
-- IoT: P3-01 mengusulkan registry perangkat dan telemetry yang menyimpan farm, unit,
-  device, metric, unit ukuran, `observed_at`, `received_at`, dan quality. Belum ada
-  migration, endpoint, atau penyimpanan telemetry; tidak memakai farm ledger lock.
+- IoT: P3-01 menyediakan registry perangkat farm-scoped, token ingest yang disimpan
+  sebagai hash, telemetry append-only, dan retensi 90 hari. P3-02 menambah config alert
+  per versi/unit, episode dan transisi, evaluasi threshold di transaksi ingest, pemeriksa
+  stale pada worker 60 detik, serta histori API/UI. Tidak memakai farm ledger lock,
+  konversi unit, polling browser, atau hardware provider.
 - AI/RAG: consume query/read contracts dengan farm authorization, bukan membaca komponen UI.
   RAG MVP mengindeks pengetahuan statis yang disetujui; fakta operasional yang berubah
   harus dibaca melalui query saat menjawab, bukan dari embedding yang bisa kedaluwarsa.
@@ -183,9 +185,9 @@ Kebijakan `finance-mvp-v1` menetapkan revenue saat pembayaran diterima, pengukur
 berdasarkan biaya produksi yang terukur dan berat panen, serta COGS yang mengikuti
 pembayaran dan reversal stok saat sale dibatalkan. Valuasi barang untuk dijual kembali,
 retur stok di luar pembatalan sale, pajak, diskon terpisah, kapital/depresiasi, dan cash
-rounding masih di luar kebijakan MVP. Threshold IoT per metric, stale timeout, dan dedupe
-window belum ditetapkan. API ingest netral-protokol adalah arah P3-01, tetapi metric/unit
-yang didukung, timestamp skew, retensi telemetry, dan rate limit masih perlu diputuskan.
+rounding masih di luar kebijakan MVP. Threshold IoT tidak memiliki nilai bawaan; setiap
+anggota farm dapat mengatur batas per pasangan metric/unit dan stale timeout 60 detik
+sampai 90 hari. Hanya pembacaan GOOD memengaruhi status episode.
 Sumber RAG awal diarahkan ke SOP internal dengan hak pakai jelas, tetapi file, audience,
 bukti hak, retensi, provider/model, vector store, dan batas biaya belum disetujui.
 Catatan RAG-01 berstatus draft parsial di `docs/decisions/rag-architecture.md`;

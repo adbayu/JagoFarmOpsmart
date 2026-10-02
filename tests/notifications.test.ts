@@ -12,6 +12,9 @@ import {
   transferStock,
 } from "../src/modules/inventory/movement-service.js";
 import { processNotificationWorkerTick } from "../src/modules/notifications/worker.js";
+import { setDeviceMetricAlertConfig } from "../src/modules/iot/alerts.js";
+import { createDevice } from "../src/modules/iot/service.js";
+import { ingestReadings } from "../src/modules/iot/ingest.js";
 import { fixture } from "./fixture.js";
 
 let sql: PGlite;
@@ -98,6 +101,124 @@ test("worker deduplicates the 24-hour reminder and delivers it to each active me
     [f.actorId, memberId].sort(),
   );
   assert.ok(inbox.rows.every((row) => row.read_at === null));
+});
+
+test("P3-02 stale alert opens at timeout once and only a fresh GOOD reading recovers it", async () => {
+  const f = await fixture(sql);
+  const device = await createDevice(
+    db,
+    { farmId: f.farmId, actorId: f.actorId },
+    key(),
+    {
+      name: "Sensor stale test",
+      farmUnitId: f.unitId,
+      metrics: [{ metric: "water_temperature", unit: "degC" }],
+    },
+  );
+  const config = await setDeviceMetricAlertConfig(
+    db,
+    { farmId: f.farmId, actorId: f.actorId },
+    device.deviceId,
+    "water_temperature",
+    key(),
+    { unit: "degC", low: null, high: null, staleAfterSeconds: 60 },
+  );
+  const unmonitoredDevice = await createDevice(
+    db,
+    { farmId: f.farmId, actorId: f.actorId },
+    key(),
+    {
+      name: "Sensor tanpa timeout",
+      farmUnitId: f.unitId,
+      metrics: [{ metric: "humidity", unit: "percent" }],
+    },
+  );
+  await setDeviceMetricAlertConfig(
+    db,
+    { farmId: f.farmId, actorId: f.actorId },
+    unmonitoredDevice.deviceId,
+    "humidity",
+    key(),
+    { unit: "percent", low: null, high: null, staleAfterSeconds: null },
+  );
+  const activatedAt = new Date(config.changedAt);
+  const staleAt = new Date(activatedAt.getTime() + 60_000);
+  await processNotificationWorkerTick(db, staleAt);
+  await processNotificationWorkerTick(db, staleAt);
+
+  let episode = await sql.query<{
+    count: string;
+    resolved_at: string | null;
+  }>(
+    `SELECT count(*)::text AS count,max(resolved_at)::text AS resolved_at
+     FROM farm_device_alert_episode WHERE device_id=$1 AND condition_kind='STALE'`,
+    [device.deviceId],
+  );
+  assert.equal(episode.rows[0]?.count, "1");
+  assert.equal(episode.rows[0]?.resolved_at, null);
+  const unmonitoredEpisode = await sql.query(
+    `SELECT id FROM farm_device_alert_episode
+     WHERE device_id=$1 AND condition_kind='STALE'`,
+    [unmonitoredDevice.deviceId],
+  );
+  assert.equal(unmonitoredEpisode.rows.length, 0);
+
+  const observedAt = new Date(activatedAt.getTime() + 40_000).toISOString();
+  await ingestReadings(db, device.token!, {
+    readings: [
+      {
+        reading_id: "suspect-freshness-only",
+        metric: "water_temperature",
+        unit: "degC",
+        value: "22",
+        observed_at: observedAt,
+        quality: "SUSPECT",
+      },
+    ],
+  });
+  await processNotificationWorkerTick(
+    db,
+    new Date(activatedAt.getTime() + 90_000),
+  );
+  episode = await sql.query(
+    `SELECT id FROM farm_device_alert_episode
+     WHERE device_id=$1 AND condition_kind='STALE' AND resolved_at IS NULL`,
+    [device.deviceId],
+  );
+  assert.equal(episode.rows.length, 1);
+
+  await ingestReadings(db, device.token!, {
+    readings: [
+      {
+        reading_id: "good-freshness-recovery",
+        metric: "water_temperature",
+        unit: "degC",
+        value: "22",
+        observed_at: observedAt,
+        quality: "GOOD",
+      },
+    ],
+  });
+  const recoveredAt = new Date(activatedAt.getTime() + 90_000);
+  await processNotificationWorkerTick(db, recoveredAt);
+  const state = await sql.query<{
+    resolved_reason: string | null;
+    resolved_at: string | null;
+    event_count: string;
+    inbox_resolved_at: string | null;
+  }>(
+    `SELECT e.resolved_reason,e.resolved_at::text AS resolved_at,
+       (SELECT count(*)::text FROM notification_outbox o
+        WHERE o.event_type='IOT_ALERT' AND o.source_id=e.id) AS event_count,
+       (SELECT max(n.resolved_at)::text FROM farm_notification n
+        JOIN notification_outbox o ON o.id=n.outbox_id WHERE o.source_id=e.id) AS inbox_resolved_at
+     FROM farm_device_alert_episode e
+     WHERE e.device_id=$1 AND e.condition_kind='STALE'`,
+    [device.deviceId],
+  );
+  assert.equal(state.rows[0]?.resolved_reason, "RECOVERED");
+  assert.equal(state.rows[0]?.event_count, "1");
+  assert.ok(state.rows[0]?.inbox_resolved_at);
 });
 
 test("stock alert episode uses aggregate lot balance and re-alerts after recovery", async () => {

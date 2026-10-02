@@ -130,7 +130,12 @@ import {
   rotateDeviceToken,
   setDeviceMetrics,
 } from "../modules/iot/service.js";
-import { listDevices } from "../modules/iot/queries.js";
+import {
+  listDeviceAlerts,
+  listDevices,
+  listTelemetryReadings,
+} from "../modules/iot/queries.js";
+import { setDeviceMetricAlertConfig } from "../modules/iot/alerts.js";
 import {
   authenticateAndConsumeRateLimit,
   ingestReadings,
@@ -243,6 +248,51 @@ export function createApp(
         uuid.parse(req.params.deviceId),
         req.get("Idempotency-Key") ?? "",
         req.body,
+      ),
+    });
+  });
+  app.put(
+    "/api/farms/:farmId/devices/:deviceId/metrics/:metric/alert-config",
+    async (req, res) => {
+      res.json({
+        data: await setDeviceMetricAlertConfig(
+          db,
+          {
+            actorId: await requireActor(req),
+            farmId: uuid.parse(req.params.farmId),
+          },
+          uuid.parse(req.params.deviceId),
+          req.params.metric,
+          req.get("Idempotency-Key") ?? "",
+          req.body,
+        ),
+      });
+    },
+  );
+  app.get("/api/farms/:farmId/devices/:deviceId/readings", async (req, res) => {
+    res.json({
+      data: await listTelemetryReadings(
+        db,
+        await requireActor(req),
+        uuid.parse(req.params.farmId),
+        uuid.parse(req.params.deviceId),
+        {
+          metric: req.query.metric,
+          unit: req.query.unit,
+          cursor: req.query.cursor,
+          limit: req.query.limit,
+        },
+      ),
+    });
+  });
+  app.get("/api/farms/:farmId/devices/:deviceId/alerts", async (req, res) => {
+    res.json({
+      data: await listDeviceAlerts(
+        db,
+        await requireActor(req),
+        uuid.parse(req.params.farmId),
+        uuid.parse(req.params.deviceId),
+        { cursor: req.query.cursor, limit: req.query.limit },
       ),
     });
   });

@@ -14,6 +14,7 @@ const eventLabels: Record<NotificationListItem["eventType"], string> = {
   SCHEDULE_REMINDER: "Pengingat jadwal",
   SCHEDULE_OVERDUE: "Jadwal terlewat",
   LOW_STOCK: "Batas stok minimum",
+  IOT_ALERT: "Alert perangkat",
 };
 
 function formatTimestamp(value: string): string {
@@ -302,7 +303,9 @@ export function NotificationsPage({
                         name={
                           item.eventType === "LOW_STOCK"
                             ? "package"
-                            : "calendar"
+                            : item.eventType === "IOT_ALERT"
+                              ? "activity"
+                              : "calendar"
                         }
                         size={20}
                       />
@@ -319,7 +322,7 @@ export function NotificationsPage({
                         </time>
                         <span>{item.payload.sourceLabel}</span>
                         {item.resolvedAt && (
-                          <span className="resolved-label">Pulih</span>
+                          <span className="resolved-label">Selesai</span>
                         )}
                       </div>
                     </div>

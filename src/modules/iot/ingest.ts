@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import type { RequestHandler } from "express";
 import { DomainError, RateLimitedError } from "../../shared/errors.js";
 import type { Database, Sql } from "../../server/db.js";
+import { evaluateThresholdAlerts } from "./alerts.js";
 import {
   canonicalDecimal,
   readingBatchSchema,
@@ -147,6 +148,7 @@ export async function ingestReadings(
 
     let stored = 0;
     let duplicate = 0;
+    const evaluatedPairs = new Map<string, { metric: string; unit: string }>();
     const results: IngestResult["results"] = [];
     for (const reading of batch.readings) {
       try {
@@ -210,7 +212,19 @@ export async function ingestReadings(
       );
       stored += 1;
       results.push({ reading_id: reading.reading_id, status: "stored" });
+      if (quality === "GOOD")
+        evaluatedPairs.set(`${reading.metric}\u0000${reading.unit}`, {
+          metric: reading.metric,
+          unit: reading.unit,
+        });
     }
+    if (evaluatedPairs.size)
+      await evaluateThresholdAlerts(
+        tx,
+        { id: registry.id, farm_id: registry.farm_id },
+        [...evaluatedPairs.values()],
+        databaseNow,
+      );
     return { stored, duplicate, results };
   });
 }

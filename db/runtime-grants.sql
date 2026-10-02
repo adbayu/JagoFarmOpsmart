@@ -47,11 +47,16 @@ GRANT UPDATE (last_success_at)
 -- token-bucket state. Farm and unit bindings remain immutable.
 GRANT UPDATE (
   label, token_hash, status, changed_by, changed_at,
-  revoked_by, revoked_at, rate_limit_tokens, rate_refilled_at
+  revoked_by, revoked_at, rate_limit_tokens, rate_refilled_at,
+  stale_alert_checked_at
 ) ON TABLE public.farm_device TO opsmart_runtime;
 GRANT UPDATE (active, changed_by, changed_at)
   ON TABLE public.farm_device_metric TO opsmart_runtime;
 GRANT EXECUTE ON FUNCTION public.purge_expired_telemetry(integer)
+  TO opsmart_runtime;
+GRANT UPDATE (resolved_at, resolved_reason, resolved_by)
+  ON TABLE public.farm_device_alert_episode TO opsmart_runtime;
+GRANT EXECUTE ON FUNCTION public.purge_expired_iot_alert_history(integer)
   TO opsmart_runtime;
 
 GRANT UPDATE ON TABLE

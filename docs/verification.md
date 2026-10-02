@@ -441,3 +441,36 @@ pemeriksaan terarah pada file implementasi P3-01 lulus.
 
 Preview lokal tersedia pada `http://127.0.0.1:5173/devices`. RAG masih berupa draft:
 belum ada knowledge center, katalog sumber hidup, ingestion, maupun vector index.
+
+## P3-02 — Monitoring dan threshold alerts (2026-10-02)
+
+Branch `codex/p3-02-monitoring-threshold-alerts` menambahkan migration 015,
+konfigurasi alert berversi per metric/unit, threshold strict, pemulihan episode,
+timeout stale melalui notification worker, fan-out outbox ke inbox anggota, query
+histori pembacaan dan episode dengan cursor, serta UI monitoring pada `/devices`.
+Event hanya dibuat saat episode mulai; recovery memperbarui status resolusi outbox
+dan inbox. Tidak ada konversi unit, polling browser, atau aksi otomatis.
+
+Tes fokus PGlite P3-02 lulus 6/6; `npm test` lulus 138/138; `npm run typecheck`
+dan `npm run build` lulus. Prettier terarah untuk seluruh berkas P3-02 lulus.
+`npm run format:check` seluruh repo masih gagal pada 128 berkas yang sudah tidak
+terformat sebelum task ini; berkas yang disentuh task ini lulus pemeriksaan terarah.
+
+UI diperiksa di preview terisolasi `http://127.0.0.1:5174/devices` dengan PGlite
+dan akun/farm/perangkat sintetis lokal; panel konfigurasi monitoring terlihat.
+`/notifications` juga menampilkan empty state dengan benar. Smoke test manual untuk
+API gagal/retry, konfigurasi sampai episode selesai, dan lebar ponsel belum dilakukan.
+
+`npm run test:postgres` melewati dua berkas tes karena `TEST_DATABASE_URL` tidak
+tersedia. Konkurensi PostgreSQL, ACL runtime migration 015 pada PostgreSQL,
+deployment, dan hardware nyata belum diverifikasi.
+
+### Catatan review lanjutan (2026-10-03)
+
+Review statis kedua tidak menemukan temuan Critical, Important, atau Minor pada
+koreksi pembagian batch stale worker, no-op konfigurasi identik, evaluasi ulang
+ketika metric diaktifkan kembali, daftar episode aktif tanpa batas halaman, dan
+ID heading bantuan UI. Hasil tes 138/138, typecheck, build, serta Prettier di atas
+mendahului koreksi tersebut dan belum dijalankan ulang. Migration/grant, locking,
+dan tes PostgreSQL tetap belum diverifikasi karena `TEST_DATABASE_URL` tidak
+tersedia.

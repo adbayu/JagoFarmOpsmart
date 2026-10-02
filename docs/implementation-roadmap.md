@@ -515,7 +515,7 @@ sumber terpilih; tidak ada konten yang diunduh atau diindeks.
 
 #### RAG-02 — Registry sumber dan pipeline ingestion deterministik
 
-- **Files:** `db/migrations/015_knowledge_base.sql`,
+- **Files:** `db/migrations/016_knowledge_base.sql`,
   `src/modules/knowledge/{contracts,service,queries,ingest}.ts`,
   `tests/knowledge-ingest.test.ts`.
 - **Dependencies:** RAG-01.
@@ -771,8 +771,9 @@ menambahkan navigasi sebelum endpoint dan status implementasi siap.
 
 ## Phase 3 — IoT dan smart farming
 
-**Status: P3-01 sudah diimplementasikan pada branch lokal `codex/p3-01-iot-telemetry`;
-verifikasi PostgreSQL nyata belum selesai.** P3-02 sampai P3-05 belum diimplementasikan.
+**Status: P3-01 dan P3-02 sudah diimplementasikan pada branch lokal
+`codex/p3-02-monitoring-threshold-alerts`; PostgreSQL nyata untuk P3-02 belum
+diverifikasi.** P3-03 sampai P3-05 belum diimplementasikan.
 Konektor perangkat nyata dan provider/model AI belum dipilih. Integrasi eksternal yang
 berbiaya atau membutuhkan hardware baru menunggu keputusan provider, protokol, secret,
 dan batas biaya. Membership Phase 2 menjadi boundary akses bersama.
@@ -810,21 +811,37 @@ deployment produksi belum diverifikasi.
 
 #### P3-02 — Monitoring dan threshold alerts
 
-**Status: menunggu persetujuan pemilik atas usulan desain (2026-10-02); implementasi belum dimulai.**
+**Status: implementasi lokal selesai pada branch `codex/p3-02-monitoring-threshold-alerts`
+pada 2026-10-02; tes PostgreSQL nyata belum diverifikasi.**
 
-- **Files:** query/rule engine di `src/modules/iot/`, integrasi P2-06, dashboard device.
-- **Dependencies:** P3-01; nilai threshold per metric/unit, stale timeout, dan dedupe
-  window masih perlu ditetapkan. Semua anggota farm memiliki kewenangan yang sama untuk
-  mengatur threshold, sesuai penggunaan internal tanpa matriks role.
-- **Required behavior:** tampilkan latest reading dengan umur/kualitas dan historis
-  terpaginasikan. Alarm hanya terhadap threshold terkonfigurasi untuk sensor terdaftar;
-  alarm stale/offline memakai heartbeat dan timeout yang dipilih. Simpan asal reading
-  serta versi threshold untuk audit.
-- **Acceptance:** bacaan basi/tidak valid diberi penanda; no threshold berarti no alarm;
-  dedupe dan resolusi alarm deterministik. Polling/SSE/WebSocket dipilih setelah skala
-  deployment diketahui; jangan menyebut realtime jika hanya polling.
-- **Tests:** unit conversion, threshold boundary/hysteresis, late/out-of-order reading,
-  offline and recovery, duplicate alert, farm access.
+- **Files:** `db/migrations/015_iot_alerts.sql`,
+  `src/modules/iot/{contracts,queries,service,ingest,alerts}.ts`,
+  `src/modules/notifications/{contracts,worker,outbox}.ts`, `src/client/devices.tsx`,
+  serta tes service, UI, dan PostgreSQL.
+- **Dependencies:** P3-01 dan P2-06; semua anggota memiliki kewenangan operasional
+  yang sama tanpa matriks role.
+- **Required behavior:** konfigurasi batas bawah/atas opsional per perangkat dan
+  pasangan metric/unit; `GOOD` terbaru mengevaluasi threshold dalam transaksi ingest;
+  stale timeout opsional diperiksa worker in-app per sekitar 60 detik. Tidak ada
+  konversi unit atau nilai threshold bawaan. Episode alert berversi, terdeduplikasi,
+  dan dapat ditelusuri ke bacaan sumber. Halaman perangkat menampilkan latest reading,
+  umur/kualitas, konfigurasi, episode, serta histori bacaan terpaginasikan.
+- **Acceptance:** sesuai spesifikasi rinci di `docs/superpowers/specs/2026-10-02-p3-02-monitoring-threshold-alerts.md` dan rencana implementasi di `docs/superpowers/plans/2026-10-02-p3-02-monitoring-threshold-alerts.md`. Worker mengirim alert ke inbox semua anggota dengan read-state
+  per anggota. Polling browser/WebSocket dan klaim realtime tidak termasuk MVP.
+- **Tests:** boundary/no-default, low/high/resolution, perubahan config, quality,
+  late/out-of-order/deduped readings, stale open/recovery, outbox delivery,
+  konkurensi ingest/worker, dan isolasi farm.
+
+Tes fokus PGlite menutup config berversi/idempoten, breach dan recovery, data
+quality, histori API ber-cursor dan farm-scoped, lifecycle metric/device, stale
+timeout, outbox, serta retensi. Tes fokus lulus 6/6; suite penuh lulus 138/138;
+typecheck dan build lulus. Prettier terarah lulus; pemeriksaan penuh repo masih gagal
+pada 128 berkas lama yang tidak terformat. Preview lokal dengan data sintetis
+diperiksa pada `http://127.0.0.1:5174/devices` dan `/notifications`.
+`npm run test:postgres` melewati dua berkas karena `TEST_DATABASE_URL` tidak ada;
+PostgreSQL nyata belum diverifikasi.
+Empat koreksi review statis setelah hasil tersebut belum diuji ulang; reviewer
+putaran kedua tidak menemukan temuan Critical, Important, atau Minor.
 
 #### P3-03 — RAG knowledge pipeline dan jawaban bersitasi
 

@@ -15,6 +15,8 @@ import {
   revokeDevice,
   rotateDeviceToken,
 } from "../../src/modules/iot/service.js";
+import { setDeviceMetricAlertConfig } from "../../src/modules/iot/alerts.js";
+import { processNotificationWorkerTick } from "../../src/modules/notifications/worker.js";
 import { postgresDatabase } from "../../src/server/db.js";
 
 type FarmFixture = CommandContext & { unitId: string };
@@ -65,14 +67,14 @@ function authorize(middleware: RequestHandler, token: string) {
   });
 }
 
-function reading(readingId: string) {
+function reading(readingId: string, value = "24.125") {
   return {
     readings: [
       {
         reading_id: readingId,
         metric: "water_temperature",
         unit: "degC",
-        value: "24.125",
+        value,
         observed_at: new Date(Date.now() - 60_000).toISOString(),
       },
     ],
@@ -80,7 +82,7 @@ function reading(readingId: string) {
 }
 
 test(
-  "P3-01 PostgreSQL concurrency, tenancy, retention, and function permissions",
+  "P3-01/P3-02 PostgreSQL concurrency, tenancy, retention, and function permissions",
   { skip: !process.env.TEST_DATABASE_URL },
   async (t) => {
     const url = process.env.TEST_DATABASE_URL!;
@@ -220,6 +222,93 @@ test(
             "code" in error &&
             error.code === "23503",
         );
+      });
+
+      await t.test(
+        "concurrentConfigAndIngestCreateOneAlertEpisode",
+        async () => {
+          const farm = await createFarm(pool, "Alert config race TEST");
+          const device = await createTestDevice(db, farm);
+          const configDb = postgresDatabase(secondPool);
+          const [ingest, config] = await Promise.all([
+            ingestReadings(
+              db,
+              device.token!,
+              reading("alert-config-race", "24"),
+            ),
+            setDeviceMetricAlertConfig(
+              configDb,
+              farm,
+              device.deviceId,
+              "water_temperature",
+              randomUUID(),
+              { unit: "degC", low: "25", high: null, staleAfterSeconds: null },
+            ),
+          ]);
+          assert.equal(ingest.stored, 1);
+          assert.equal(config.version, 1);
+          const counts = await pool.query<{
+            episodes: string;
+            open_episodes: string;
+            events: string;
+          }>(
+            `SELECT
+             (SELECT count(*)::text FROM farm_device_alert_episode WHERE device_id=$1) AS episodes,
+             (SELECT count(*)::text FROM farm_device_alert_episode WHERE device_id=$1 AND resolved_at IS NULL) AS open_episodes,
+             (SELECT count(*)::text FROM notification_outbox WHERE event_type='IOT_ALERT'
+               AND source_id IN (SELECT id FROM farm_device_alert_episode WHERE device_id=$1)) AS events`,
+            [device.deviceId],
+          );
+          assert.deepEqual(counts.rows[0], {
+            episodes: "1",
+            open_episodes: "1",
+            events: "1",
+          });
+        },
+      );
+
+      await t.test("twoWorkersDoNotDuplicateStaleAlertOrInbox", async () => {
+        const farm = await createFarm(pool, "Concurrent stale worker TEST");
+        const device = await createTestDevice(db, farm);
+        await setDeviceMetricAlertConfig(
+          db,
+          farm,
+          device.deviceId,
+          "water_temperature",
+          randomUUID(),
+          { unit: "degC", low: null, high: null, staleAfterSeconds: 60 },
+        );
+        await pool.query(
+          `UPDATE farm_device_alert_config SET created_at=clock_timestamp()-interval '61 seconds'
+           WHERE device_id=$1 AND metric_key='water_temperature'`,
+          [device.deviceId],
+        );
+        await Promise.all([
+          processNotificationWorkerTick(db),
+          processNotificationWorkerTick(postgresDatabase(secondPool)),
+        ]);
+        const counts = await pool.query<{
+          episodes: string;
+          events: string;
+          inbox: string;
+        }>(
+          `SELECT
+             (SELECT count(*)::text FROM farm_device_alert_episode
+               WHERE device_id=$1 AND condition_kind='STALE') AS episodes,
+             (SELECT count(*)::text FROM notification_outbox
+               WHERE event_type='IOT_ALERT' AND source_id IN
+                 (SELECT id FROM farm_device_alert_episode WHERE device_id=$1)) AS events,
+             (SELECT count(*)::text FROM farm_notification n
+               JOIN notification_outbox o ON o.id=n.outbox_id
+               WHERE o.event_type='IOT_ALERT' AND o.source_id IN
+                 (SELECT id FROM farm_device_alert_episode WHERE device_id=$1)) AS inbox`,
+          [device.deviceId],
+        );
+        assert.deepEqual(counts.rows[0], {
+          episodes: "1",
+          events: "1",
+          inbox: "1",
+        });
       });
 
       await t.test("purgeFunctionAclAndSearchPath", async () => {

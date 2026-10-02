@@ -6,7 +6,7 @@ export const notificationListInput = z.object({
 });
 
 export type NotificationEventType =
-  "SCHEDULE_REMINDER" | "SCHEDULE_OVERDUE" | "LOW_STOCK";
+  "SCHEDULE_REMINDER" | "SCHEDULE_OVERDUE" | "LOW_STOCK" | "IOT_ALERT";
 
 export type NotificationPayload = {
   title: string;

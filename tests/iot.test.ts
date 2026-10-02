@@ -16,6 +16,7 @@ import {
   rotateDeviceToken,
   setDeviceMetrics,
 } from "../src/modules/iot/service.js";
+import { setDeviceMetricAlertConfig } from "../src/modules/iot/alerts.js";
 import { listDevices } from "../src/modules/iot/queries.js";
 import { latestTelemetryReading } from "../src/modules/iot/queries.js";
 import {
@@ -1275,4 +1276,427 @@ test("retentionWorkerRetriesFullBatchAfterMinute", async (t) => {
   stop();
   t.mock.timers.tick(24 * 60 * 60 * 1000);
   assert.equal(queryCount, 2);
+});
+
+test("P3-02 migration enforces versioned alert config and one open episode", async () => {
+  const result = await registrySql.query<{ count: string }>(
+    `SELECT count(*)::text AS count FROM pg_class
+     WHERE relkind='r' AND relname=ANY($1::text[])`,
+    [
+      [
+        "farm_device_alert_config",
+        "farm_device_alert_episode",
+        "farm_device_alert_transition",
+      ],
+    ],
+  );
+  assert.equal(result.rows[0]?.count, "3");
+
+  const device = await createTestDevice();
+  const config = await registrySql.query<{ version: number }>(
+    `INSERT INTO farm_device_alert_config
+       (device_id,metric_key,measurement_unit,version,low_threshold,
+        high_threshold,stale_after_seconds,changed_by)
+     VALUES($1,'water_temperature','degC',1,18,30,60,$2)
+     RETURNING version`,
+    [device.deviceId, registryFarm.actorId],
+  );
+  assert.equal(config.rows[0]?.version, 1);
+
+  await assert.rejects(() =>
+    registrySql.query(
+      `INSERT INTO farm_device_alert_config
+         (device_id,metric_key,measurement_unit,version,low_threshold,
+          high_threshold,stale_after_seconds,changed_by)
+       VALUES($1,'water_temperature','degC',2,30,18,59,$2)`,
+      [device.deviceId, registryFarm.actorId],
+    ),
+  );
+
+  const episodeId = randomUUID();
+  const episodeValues = [
+    episodeId,
+    registryFarm.farmId,
+    device.deviceId,
+    registryFarm.actorId,
+  ];
+  const insertEpisode = `INSERT INTO farm_device_alert_episode
+    (id,farm_id,device_id,metric_key,measurement_unit,condition_kind,
+     config_version,open_reason,opened_by)
+   VALUES($1,$2,$3,'water_temperature','degC','LOW',1,'THRESHOLD',$4)`;
+  await registrySql.query(insertEpisode, episodeValues);
+  await assert.rejects(() =>
+    registrySql.query(insertEpisode, [randomUUID(), ...episodeValues.slice(1)]),
+  );
+
+  await registrySql.query(
+    `INSERT INTO notification_outbox
+       (id,farm_id,event_key,event_type,source_id,payload)
+     VALUES($1,$2,$3,'IOT_ALERT',$4,'{}'::jsonb)`,
+    [randomUUID(), registryFarm.farmId, `iot:${episodeId}`, episodeId],
+  );
+
+  const expiredEpisodeId = randomUUID();
+  const expiredAt = new Date(
+    Date.now() - 91 * 24 * 60 * 60 * 1000,
+  ).toISOString();
+  await registrySql.query(
+    `INSERT INTO farm_device_alert_episode
+       (id,farm_id,device_id,metric_key,measurement_unit,condition_kind,
+        config_version,opened_at,resolved_at,open_reason,resolved_reason)
+     VALUES($1,$2,$3,'water_temperature','degC','HIGH',1,$4,$4,
+       'THRESHOLD','RECOVERED')`,
+    [expiredEpisodeId, registryFarm.farmId, device.deviceId, expiredAt],
+  );
+  await registrySql.query(
+    `INSERT INTO farm_device_alert_transition
+       (id,farm_id,episode_id,transition_type,occurred_at,reason,config_version)
+     VALUES($1,$2,$3,'OPENED',$4,'THRESHOLD',1),
+       ($5,$2,$3,'RECOVERED',$4,'RECOVERED',1)`,
+    [
+      randomUUID(),
+      registryFarm.farmId,
+      expiredEpisodeId,
+      expiredAt,
+      randomUUID(),
+    ],
+  );
+  const purge = await registrySql.query<{ deleted: string }>(
+    "SELECT purge_expired_iot_alert_history(1000)::text AS deleted",
+  );
+  assert.equal(purge.rows[0]?.deleted, "1");
+  const preserved = await registrySql.query<{ count: string }>(
+    "SELECT count(*)::text AS count FROM farm_device_alert_episode WHERE id=$1",
+    [episodeId],
+  );
+  assert.equal(preserved.rows[0]?.count, "1");
+});
+
+test("P3-02 config is versioned, idempotent, and reevaluates latest GOOD reading", async () => {
+  const device = await createTestDevice();
+  await ingestReadings(registryDb, device.token!, {
+    readings: [reading({ reading_id: "before-config", value: "17" })],
+  });
+  const context = registryContext();
+  const key = randomUUID();
+  const input = {
+    unit: "degC",
+    low: "18",
+    high: "30",
+    staleAfterSeconds: null,
+  };
+
+  await assert.rejects(
+    setDeviceMetricAlertConfig(
+      registryDb,
+      context,
+      device.deviceId,
+      "water_temperature",
+      randomUUID(),
+      { ...input, unit: "ppm" },
+    ),
+    (error: unknown) =>
+      error instanceof Error && "code" in error && error.code === "VALIDATION",
+  );
+
+  const first = await setDeviceMetricAlertConfig(
+    registryDb,
+    context,
+    device.deviceId,
+    "water_temperature",
+    key,
+    input,
+  );
+  const replay = await setDeviceMetricAlertConfig(
+    registryDb,
+    context,
+    device.deviceId,
+    "water_temperature",
+    key,
+    input,
+  );
+  assert.deepEqual(replay, first);
+  assert.equal(first.version, 1);
+
+  const state = await registrySql.query<{ episodes: string; events: string }>(
+    `SELECT
+       (SELECT count(*)::text FROM farm_device_alert_episode WHERE device_id=$1) AS episodes,
+       (SELECT count(*)::text FROM notification_outbox WHERE source_id IN
+         (SELECT id FROM farm_device_alert_episode WHERE device_id=$1)
+         AND event_type='IOT_ALERT') AS events`,
+    [device.deviceId],
+  );
+  assert.equal(state.rows[0]?.episodes, "1");
+  assert.equal(state.rows[0]?.events, "1");
+
+  const memberId = randomUUID();
+  await registrySql.query(
+    "INSERT INTO app_user(id,auth_subject,display_name) VALUES($1,$2,'ALERT MEMBER TEST')",
+    [memberId, `test:${memberId}`],
+  );
+  await registrySql.query(
+    "INSERT INTO farm_membership(farm_id,user_id,added_by) VALUES($1,$2,$3)",
+    [registryFarm.farmId, memberId, registryFarm.actorId],
+  );
+  const memberConfig = await setDeviceMetricAlertConfig(
+    registryDb,
+    registryContext(registryFarm.farmId, memberId),
+    device.deviceId,
+    "water_temperature",
+    randomUUID(),
+    input,
+  );
+  assert.equal(memberConfig.version, 2);
+  assert.equal(memberConfig.changedBy, memberId);
+  const versions = await registrySql.query<{
+    count: string;
+    open_count: string;
+  }>(
+    `SELECT count(*)::text AS count,
+       count(*) FILTER (WHERE resolved_at IS NULL)::text AS open_count
+     FROM farm_device_alert_episode WHERE device_id=$1`,
+    [device.deviceId],
+  );
+  assert.deepEqual(versions.rows[0], { count: "2", open_count: "1" });
+
+  await assert.rejects(
+    setDeviceMetricAlertConfig(
+      registryDb,
+      context,
+      device.deviceId,
+      "water_temperature",
+      key,
+      { ...input, low: "19" },
+    ),
+    (error: unknown) =>
+      error instanceof Error && "code" in error && error.code === "CONFLICT",
+  );
+  await assert.rejects(
+    setDeviceMetricAlertConfig(
+      registryDb,
+      registryContext(randomUUID(), registryFarm.actorId),
+      device.deviceId,
+      "water_temperature",
+      randomUUID(),
+      input,
+    ),
+    (error: unknown) =>
+      error instanceof Error && "code" in error && error.code === "FORBIDDEN",
+  );
+});
+
+test("P3-02 ingest opens once, ignores duplicate/non-GOOD, and resolves at threshold", async () => {
+  const device = await createTestDevice();
+  await setDeviceMetricAlertConfig(
+    registryDb,
+    registryContext(),
+    device.deviceId,
+    "water_temperature",
+    randomUUID(),
+    { unit: "degC", low: "18", high: "30", staleAfterSeconds: null },
+  );
+
+  const base = Date.now();
+  const breached = reading({
+    reading_id: "below-threshold",
+    value: "17",
+    observed_at: new Date(base - 10_000).toISOString(),
+  });
+  await ingestReadings(registryDb, device.token!, { readings: [breached] });
+  await ingestReadings(registryDb, device.token!, { readings: [breached] });
+  await ingestReadings(registryDb, device.token!, {
+    readings: [
+      reading({
+        reading_id: "late-inside-threshold",
+        value: "25",
+        observed_at: new Date(base - 20_000).toISOString(),
+      }),
+    ],
+  });
+  await ingestReadings(registryDb, device.token!, {
+    readings: [
+      reading({
+        reading_id: "suspect-at-bound",
+        value: "18",
+        quality: "SUSPECT",
+        observed_at: new Date(base - 5_000).toISOString(),
+      }),
+      reading({
+        reading_id: "invalid-at-bound",
+        value: "18",
+        quality: "INVALID",
+        observed_at: new Date(base - 4_000).toISOString(),
+      }),
+    ],
+  });
+  const state = await registrySql.query<{
+    opened: string;
+    open: string;
+    events: string;
+  }>(
+    `SELECT
+       (SELECT count(*)::text FROM farm_device_alert_episode WHERE device_id=$1) AS opened,
+       (SELECT count(*)::text FROM farm_device_alert_episode WHERE device_id=$1 AND resolved_at IS NULL) AS open,
+       (SELECT count(*)::text FROM notification_outbox WHERE event_type='IOT_ALERT' AND source_id IN
+         (SELECT id FROM farm_device_alert_episode WHERE device_id=$1)) AS events`,
+    [device.deviceId],
+  );
+  assert.deepEqual(state.rows[0], { opened: "1", open: "1", events: "1" });
+
+  await ingestReadings(registryDb, device.token!, {
+    readings: [
+      reading({
+        reading_id: "at-threshold",
+        value: "18",
+        observed_at: new Date(base - 1_000).toISOString(),
+      }),
+    ],
+  });
+  const recoveredState = await registrySql.query<{
+    opened: string;
+    open: string;
+    resolved: string;
+  }>(
+    `SELECT
+       count(*)::text AS opened,
+       count(*) FILTER (WHERE resolved_at IS NULL)::text AS open,
+       count(*) FILTER (WHERE resolved_reason='RECOVERED')::text AS resolved
+     FROM farm_device_alert_episode WHERE device_id=$1`,
+    [device.deviceId],
+  );
+  assert.deepEqual(recoveredState.rows[0], {
+    opened: "1",
+    open: "0",
+    resolved: "1",
+  });
+});
+
+test("P3-02 history APIs include every quality, page stably, and scope to membership", async () => {
+  const device = await createTestDevice();
+  const now = Date.now();
+  await setDeviceMetricAlertConfig(
+    registryDb,
+    registryContext(),
+    device.deviceId,
+    "water_temperature",
+    randomUUID(),
+    { unit: "degC", low: "18", high: "30", staleAfterSeconds: null },
+  );
+  await ingestReadings(registryDb, device.token!, {
+    readings: [
+      reading({
+        reading_id: "history-old",
+        value: "17",
+        observed_at: new Date(now - 3_000).toISOString(),
+      }),
+    ],
+  });
+  await ingestReadings(registryDb, device.token!, {
+    readings: [
+      reading({
+        reading_id: "history-invalid",
+        value: "0",
+        quality: "INVALID",
+        observed_at: new Date(now - 2_000).toISOString(),
+      }),
+      reading({
+        reading_id: "history-current",
+        value: "18",
+        observed_at: new Date(now - 1_000).toISOString(),
+      }),
+    ],
+  });
+  const app = httpApi();
+  try {
+    const first = await app.request(
+      `/api/farms/${registryFarm.farmId}/devices/${device.deviceId}/readings?metric=water_temperature&unit=degC&limit=2`,
+    );
+    assert.equal(first.status, 200);
+    assert.deepEqual(
+      first.json.data.items.map(
+        (item: { readingId: string }) => item.readingId,
+      ),
+      ["history-current", "history-invalid"],
+    );
+    assert.equal(first.json.data.items[1].quality, "INVALID");
+    const cursor = first.json.data.nextCursor;
+    assert.equal(typeof cursor, "string");
+    const second = await app.request(
+      `/api/farms/${registryFarm.farmId}/devices/${device.deviceId}/readings?metric=water_temperature&unit=degC&limit=2&cursor=${encodeURIComponent(cursor)}`,
+    );
+    assert.deepEqual(
+      second.json.data.items.map(
+        (item: { readingId: string }) => item.readingId,
+      ),
+      ["history-old"],
+    );
+    assert.equal(second.json.data.nextCursor, null);
+
+    const alerts = await app.request(
+      `/api/farms/${registryFarm.farmId}/devices/${device.deviceId}/alerts?limit=5`,
+    );
+    assert.equal(alerts.status, 200);
+    assert.equal(alerts.json.data.configs[0].version, 1);
+    assert.equal(alerts.json.data.items[0].condition, "LOW");
+    assert.equal(alerts.json.data.items[0].resolvedReason, "RECOVERED");
+    assert.equal(alerts.json.data.items[0].transitions.length, 2);
+
+    const foreignFarm = await fixture(registrySql);
+    const foreign = await app.request(
+      `/api/farms/${foreignFarm.farmId}/devices/${device.deviceId}/alerts`,
+    );
+    assert.equal(foreign.status, 403);
+    assert.equal(foreign.json.error.code, "FORBIDDEN");
+  } finally {
+    await app.close();
+  }
+});
+
+test("P3-02 disabling a metric and revoking a device close open episodes", async () => {
+  const context = registryContext();
+  const disabledDevice = await createTestDevice();
+  await setDeviceMetricAlertConfig(
+    registryDb,
+    context,
+    disabledDevice.deviceId,
+    "water_temperature",
+    randomUUID(),
+    { unit: "degC", low: "18", high: null, staleAfterSeconds: null },
+  );
+  await ingestReadings(registryDb, disabledDevice.token!, {
+    readings: [reading({ reading_id: "disabled-source", value: "17" })],
+  });
+  await setDeviceMetrics(
+    registryDb,
+    context,
+    disabledDevice.deviceId,
+    randomUUID(),
+    {
+      metrics: [{ metric: "water_temperature", unit: "degC", active: false }],
+    },
+  );
+  const disabled = await registrySql.query<{ resolved_reason: string | null }>(
+    "SELECT resolved_reason FROM farm_device_alert_episode WHERE device_id=$1",
+    [disabledDevice.deviceId],
+  );
+  assert.deepEqual(disabled.rows, [{ resolved_reason: "METRIC_DISABLED" }]);
+
+  const revokedDevice = await createTestDevice();
+  await setDeviceMetricAlertConfig(
+    registryDb,
+    context,
+    revokedDevice.deviceId,
+    "water_temperature",
+    randomUUID(),
+    { unit: "degC", low: "18", high: null, staleAfterSeconds: null },
+  );
+  await ingestReadings(registryDb, revokedDevice.token!, {
+    readings: [reading({ reading_id: "revoked-source", value: "17" })],
+  });
+  await revokeDevice(registryDb, context, revokedDevice.deviceId, randomUUID());
+  const revoked = await registrySql.query<{ resolved_reason: string | null }>(
+    "SELECT resolved_reason FROM farm_device_alert_episode WHERE device_id=$1",
+    [revokedDevice.deviceId],
+  );
+  assert.deepEqual(revoked.rows, [{ resolved_reason: "DEVICE_REVOKED" }]);
 });
