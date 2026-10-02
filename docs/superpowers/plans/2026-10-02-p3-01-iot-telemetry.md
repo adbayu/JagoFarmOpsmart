@@ -2,7 +2,7 @@
 
 **Status:** Baseline spec disetujui pada 2026-10-02; rencana menunggu tinjauan pemilik. Belum ada kode P3-01.
 
-> **For agentic workers:** Use `superpowers:executing-plans` after the owner approves this plan. Do not write application code before that review. This checkout has no Git repository, so do not create commits.
+> **For agentic workers:** Use `superpowers:executing-plans` after the owner approves this plan. Do not write application code before that review. Git version control is configured with the user's GitHub repository; keep implementation changes reviewable and commit them after verification.
 
 **Goal:** Menyediakan registry perangkat yang farm-scoped, ingest telemetry netral-protokol yang idempoten, serta retensi bacaan yang aman tanpa mengubah domain operasional farm.
 
