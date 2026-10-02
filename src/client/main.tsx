@@ -38,6 +38,7 @@ import { WastePage } from "./waste.js";
 import { MaggotPage } from "./maggot.js";
 import { WaterTransferPage } from "./water-transfer.js";
 import { NotificationsPage } from "./notifications.js";
+import { DevicesPage } from "./devices.js";
 import { Icon, type IconName } from "./icons.js";
 import "./styles.css";
 
@@ -55,6 +56,7 @@ const navIcons: Record<(typeof pages)[number]["path"], IconName> = {
   "/waste": "recycle",
   "/maggot": "recycle",
   "/circular/water-transfers": "crop",
+  "/devices": "activity",
   "/harvest": "harvest",
   "/products": "package",
   "/sales": "cart",
@@ -281,6 +283,10 @@ function Shell({
               element={<WaterTransferPage state={farmState} />}
             />
             <Route
+              path="/devices"
+              element={<DevicesPage state={farmState} />}
+            />
+            <Route
               path="/inventory/:itemId"
               element={<InventoryItemPage state={farmState} />}
             />
@@ -322,6 +328,7 @@ function Shell({
                     "/waste",
                     "/maggot",
                     "/circular/water-transfers",
+                    "/devices",
                     "/harvest",
                     "/products",
                     "/sales",

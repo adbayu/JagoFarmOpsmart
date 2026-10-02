@@ -111,7 +111,7 @@ Route berada di `/api/farms/:farmId/devices` dan memakai session anggota farm.
 | Daftar        | `GET /api/farms/:farmId/devices`                         | Halaman registry, status, unit fisik, konfigurasi metric, dan `last_received_at`    |
 | Buat          | `POST /api/farms/:farmId/devices`                        | Nama, `farm_unit_id`, dan daftar metric/unit; respons awal menyertakan token sekali |
 | Ubah nama     | `PATCH /api/farms/:farmId/devices/:deviceId`             | Mengubah label saja                                                                 |
-| Kelola metric | `PUT /api/farms/:farmId/devices/:deviceId/metrics`       | Mengaktifkan/nonaktifkan pasangan metric/unit; bacaan historis tetap utuh           |
+| Kelola metric | `PUT /api/farms/:farmId/devices/:deviceId/metrics`       | Mengganti daftar pasangan yang dikonfigurasi; pasangan aktif yang dihilangkan dinonaktifkan dengan event audit. Bacaan historis tetap utuh |
 | Rotasi token  | `POST /api/farms/:farmId/devices/:deviceId/token/rotate` | Mengganti token secara atomik dan mengembalikan token baru sekali                   |
 | Cabut         | `POST /api/farms/:farmId/devices/:deviceId/revoke`       | Membatalkan token dan menghentikan ingest                                           |
 

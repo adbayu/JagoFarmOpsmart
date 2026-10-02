@@ -1,6 +1,6 @@
 # Peta status fitur OpSmart
 
-Status berdasarkan kode, UI, dan roadmap pada 2026-10-01. Status "fondasi" berarti
+Status berdasarkan kode, UI, dan roadmap pada 2026-10-02. Status "fondasi" berarti
 schema/kontrak tersedia, tetapi alur pengguna belum terimplementasi.
 
 ## Ringkasan
@@ -11,7 +11,7 @@ schema/kontrak tersedia, tetapi alur pengguna belum terimplementasi.
 | Registry farm        | CRUD farm tersedia; akses operasional setara, Owner menambah dan mengeluarkan anggota                                                                                                                                                                                               |
 | MVP/Core operasional | Farm sampai penjualan dan pembayaran tersedia di UI/API; revenue/HPP/profit memakai policy `finance-mvp-v1` serta menunjukkan alasan bila input belum lengkap                                                                                                                       |
 | Phase 2              | Lingkup lokal yang disetujui selesai: membership, waste/audit, batch maggot, analitik terukur dan perbandingan, posting same-unit, transfer air, serta inbox tersedia; deployment produksi belum diverifikasi                                                                       |
-| Phase 3              | Belum diimplementasikan; baseline spec P3-01 disetujui untuk perencanaan dan rencananya menunggu tinjauan; RAG-01 memiliki draft keputusan; desain P3-04 disetujui dan rencananya menunggu tinjauan; pilihan sumber, hak pakai, hosting, retensi, provider, dan biaya masih terbuka |
+| Phase 3              | P3-01 sudah diimplementasikan di branch lokal; tes PostgreSQL nyata belum dijalankan karena `TEST_DATABASE_URL` tidak tersedia. P3-02/P3-03/P3-04/P3-05 belum diimplementasikan; belum ada knowledge center RAG, ingestion, atau vector index. Sumber SOP, hak pakai, hosting, retensi, provider, dan biaya masih terbuka |
 
 ## MVP/Core menurut task implementasi
 
@@ -62,18 +62,17 @@ produksi Phase 2 belum diverifikasi.
 
 ## Phase 3
 
-Belum diimplementasikan. Scope dan urutan kerja dirinci di
-`docs/implementation-roadmap.md` bagian “Phase 3 — IoT dan smart farming”. RAG-01
-memiliki draft keputusan di `docs/decisions/rag-architecture.md`; belum ada dokumen
-yang disetujui untuk ingestion atau provider yang disetujui untuk menerima data.
-P3-04 telah disetujui desainnya, sementara rencana implementasi menunggu tinjauan.
-Baseline spec P3-01 untuk registry perangkat dan ingest generik disetujui untuk
-perencanaan pada 2026-10-02 di
-`docs/superpowers/specs/2026-10-01-p3-01-iot-telemetry-design.md`; rencana implementasinya
-menunggu tinjauan di `docs/superpowers/plans/2026-10-02-p3-01-iot-telemetry.md`.
-Tidak ada konektor perangkat, pipeline RAG, model, menu, vector index, atau
-endpoint telemetry produksi yang tersedia. Pilihan hosting, retensi, sumber SOP/hak
-pakai, provider/model, dan biaya masih menjadi gate.
+P3-01 sudah memiliki migration, registry perangkat, API ingest generik, worker retensi,
+dan halaman `/devices` di branch lokal `codex/p3-01-iot-telemetry`. Suite lokal lulus
+126/126, typecheck, dan build lulus. Tes khusus PostgreSQL telah ditambahkan tetapi
+belum dijalankan karena `TEST_DATABASE_URL` tidak tersedia; deployment dan kompatibilitas
+perangkat nyata belum diverifikasi. Threshold/alert P3-02 belum dibuat.
+
+RAG-01 tetap berupa draft keputusan. Belum ada knowledge center yang berjalan, katalog
+sumber dalam aplikasi, ingestion pipeline, endpoint/chat RAG, atau vector index. Belum
+ada SOP internal yang diunggah/disetujui, dan pilihan hosting, retensi, provider/model,
+serta biaya masih menjadi gate. P3-04 baru disetujui pada tingkat desain; belum ada
+implementasi rekomendasi.
 
 ## Yang terlihat di UI sekarang
 

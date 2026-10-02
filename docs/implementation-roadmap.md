@@ -419,11 +419,11 @@ Phase 2/3 tidak termasuk task ini. Integrasinya mengikuti extension points di ar
 
 ## Phase 3 — AI Assistant dengan RAG
 
-**Status: direncanakan, belum diimplementasikan.** Tidak ada ingestion pipeline,
-vector index, endpoint, atau chat assistant RAG di aplikasi saat ini. Verifikasi
-PostgreSQL Task 20 selesai. RAG-01 memiliki catatan keputusan berstatus draft;
-ingestion dan layanan RAG tetap belum diimplementasikan sampai sumber/hak pakai,
-retensi, hosting, provider/vector store, serta batas biaya diputuskan.
+**Status: direncanakan, belum diimplementasikan.** Belum ada knowledge center di UI,
+katalog sumber yang berjalan, ingestion pipeline, vector index, endpoint, atau chat
+assistant RAG. RAG-01 memiliki catatan keputusan berstatus draft; ingestion dan layanan
+RAG tetap belum diimplementasikan sampai sumber/hak pakai, retensi, hosting,
+provider/vector store, serta batas biaya diputuskan.
 
 ### Referensi `finetune-prep`
 
@@ -771,22 +771,23 @@ menambahkan navigasi sebelum endpoint dan status implementasi siap.
 
 ## Phase 3 — IoT dan smart farming
 
-**Status: belum diimplementasikan.** Konektor perangkat nyata dan provider/model AI
-belum dipilih. Bangun kontrak/adaptor netral terlebih dahulu; integrasi eksternal yang
-berbiaya atau membutuhkan hardware baru diaktifkan setelah provider, protokol, secret,
-dan batas biaya disetujui. Membership Phase 2 menjadi boundary akses bersama.
+**Status: P3-01 sudah diimplementasikan pada branch lokal `codex/p3-01-iot-telemetry`;
+verifikasi PostgreSQL nyata belum selesai.** P3-02 sampai P3-05 belum diimplementasikan.
+Konektor perangkat nyata dan provider/model AI belum dipilih. Integrasi eksternal yang
+berbiaya atau membutuhkan hardware baru menunggu keputusan provider, protokol, secret,
+dan batas biaya. Membership Phase 2 menjadi boundary akses bersama.
 
 ### Urutan implementasi Phase 3
 
 #### P3-01 — Registry perangkat dan ingest telemetry
 
-**Status: baseline desain disetujui pada 2026-10-02; rencana implementasi menunggu tinjauan.** Lihat
+**Status: kode registry, ingest, retensi, dan UI telah diimplementasikan pada
+2026-10-02; tes PostgreSQL nyata belum diverifikasi.** Desain dan rencana ada di
 `docs/superpowers/specs/2026-10-01-p3-01-iot-telemetry-design.md` dan
 `docs/superpowers/plans/2026-10-02-p3-01-iot-telemetry.md`.
-Belum ada migration, registry perangkat, endpoint ingest, atau penyimpanan telemetry.
 
-- **Files:** `db/migrations/014_iot_telemetry.sql`, `src/modules/iot/`, API ingest
-  server-to-server, tes keamanan.
+- **Files:** `db/migrations/014_iot_telemetry.sql`, `src/modules/iot/`, route registry
+  dan ingest, `src/client/devices.tsx`, tes PGlite/HTTP dan tes PostgreSQL.
 - **Dependencies:** P2-01. Pasangan metric/unit didaftarkan per perangkat; P3-01 tidak
   bergantung pada vendor, hardware, atau protokol tertentu. Adapter atau klaim
   kompatibilitas memerlukan tinjauan terpisah. Threshold dan stale timeout tetap
@@ -795,10 +796,17 @@ Belum ada migration, registry perangkat, endpoint ingest, atau penyimpanan telem
   setiap reading memiliki farm, unit, device, metric, unit, observed_at, received_at,
   dan quality. Tolak timestamp/unit/metric tidak valid; idempotensi ingest dan rate
   limit; kredensial tidak pernah masuk browser/log. Tidak memakai farm ledger lock.
+  `PUT` metric menyamakan konfigurasi yang diinginkan: pasangan aktif yang dihilangkan
+  menjadi nonaktif dengan event audit; bacaan historisnya tetap disimpan.
 - **Acceptance:** token satu perangkat hanya menulis ke device/farm terdaftar; reading
   lintas farm ditolak; data lama/duplikat tidak mengubah data baru; rotasi/revoke token.
 - **Tests:** auth token, cross-device/farm, timestamp skew, payload invalid, burst limit,
   retention/index query, PostgreSQL multi-connection.
+
+Suite lokal `npm run test` lulus 126/126; `npm run typecheck` dan `npm run build` lulus.
+`tests/postgres/iot.test.ts` mencakup konkurensi, scope metric, rotasi/revoke, retensi,
+dan ACL, tetapi dilewati karena `TEST_DATABASE_URL` tidak tersedia. Hardware dan
+deployment produksi belum diverifikasi.
 
 #### P3-02 — Monitoring dan threshold alerts
 

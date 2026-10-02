@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { mkdtemp, readFile, readdir, realpath, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, realpath, rm } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import type { Database } from "../src/server/db.js";
@@ -10,6 +10,7 @@ import { getFarm } from "../src/modules/farms/queries.js";
 
 test("existing schema upgrade preserves farms and receipts across a PGlite restart", async () => {
   const testRoot = join(process.cwd(), ".pglite");
+  await mkdir(testRoot, { recursive: true });
   const directory = await mkdtemp(join(testRoot, "opsmart-persistence-"));
   let sql: PGlite | undefined;
   try {

@@ -1,7 +1,12 @@
 import express, { type Request } from "express";
 import { randomUUID } from "node:crypto";
 import { ZodError } from "zod";
-import { DomainError, errorMessages, httpStatus } from "../shared/errors.js";
+import {
+  DomainError,
+  RateLimitedError,
+  errorMessages,
+  httpStatus,
+} from "../shared/errors.js";
 import { uuid } from "../shared/validation.js";
 import { consume } from "../modules/inventory/service.js";
 import {
@@ -119,6 +124,19 @@ import {
   markNotificationRead,
 } from "../modules/notifications/queries.js";
 import {
+  createDevice,
+  renameDevice,
+  revokeDevice,
+  rotateDeviceToken,
+  setDeviceMetrics,
+} from "../modules/iot/service.js";
+import { listDevices } from "../modules/iot/queries.js";
+import {
+  authenticateAndConsumeRateLimit,
+  ingestReadings,
+  readBearerToken,
+} from "../modules/iot/ingest.js";
+import {
   createCommodity,
   createCycle,
   recordObservation,
@@ -154,6 +172,16 @@ export function createApp(
     res.setHeader("Cache-Control", "no-store");
     next();
   });
+  app.post(
+    "/api/iot/v1/readings",
+    authenticateAndConsumeRateLimit(db),
+    express.json({ limit: "128kb" }),
+    async (req, res) => {
+      const token = readBearerToken(req.get("authorization"));
+      if (!token) throw new DomainError("UNAUTHORIZED");
+      res.json({ data: await ingestReadings(db, token, req.body) });
+    },
+  );
   app.use(express.json({ limit: "100kb" }));
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", phase: "foundation" });
@@ -167,6 +195,86 @@ export function createApp(
     if (!identity) throw new DomainError("UNAUTHORIZED");
     return uuid.parse(identity.userId);
   }
+  app.get("/api/farms/:farmId/devices", async (req, res) => {
+    res.json({
+      data: await listDevices(
+        db,
+        await requireActor(req),
+        uuid.parse(req.params.farmId),
+        { cursor: req.query.cursor, limit: req.query.limit },
+      ),
+    });
+  });
+  app.post("/api/farms/:farmId/devices", async (req, res) => {
+    res.json({
+      data: await createDevice(
+        db,
+        {
+          actorId: await requireActor(req),
+          farmId: uuid.parse(req.params.farmId),
+        },
+        req.get("Idempotency-Key") ?? "",
+        req.body,
+      ),
+    });
+  });
+  app.patch("/api/farms/:farmId/devices/:deviceId", async (req, res) => {
+    res.json({
+      data: await renameDevice(
+        db,
+        {
+          actorId: await requireActor(req),
+          farmId: uuid.parse(req.params.farmId),
+        },
+        uuid.parse(req.params.deviceId),
+        req.get("Idempotency-Key") ?? "",
+        req.body,
+      ),
+    });
+  });
+  app.put("/api/farms/:farmId/devices/:deviceId/metrics", async (req, res) => {
+    res.json({
+      data: await setDeviceMetrics(
+        db,
+        {
+          actorId: await requireActor(req),
+          farmId: uuid.parse(req.params.farmId),
+        },
+        uuid.parse(req.params.deviceId),
+        req.get("Idempotency-Key") ?? "",
+        req.body,
+      ),
+    });
+  });
+  app.post(
+    "/api/farms/:farmId/devices/:deviceId/token/rotate",
+    async (req, res) => {
+      res.json({
+        data: await rotateDeviceToken(
+          db,
+          {
+            actorId: await requireActor(req),
+            farmId: uuid.parse(req.params.farmId),
+          },
+          uuid.parse(req.params.deviceId),
+          req.get("Idempotency-Key") ?? "",
+        ),
+      });
+    },
+  );
+  app.post("/api/farms/:farmId/devices/:deviceId/revoke", async (req, res) => {
+    res.json({
+      data: await revokeDevice(
+        db,
+        {
+          actorId: await requireActor(req),
+          farmId: uuid.parse(req.params.farmId),
+        },
+        uuid.parse(req.params.deviceId),
+        req.get("Idempotency-Key") ?? "",
+      ),
+    });
+  });
   app.get("/api/farms/:farmId/notifications", async (req, res) => {
     res.json({
       data: await listNotifications(
@@ -1223,9 +1331,13 @@ export function createApp(
     });
   });
   app.use("/api", (_req, res) => {
-    res
-      .status(404)
-      .json({ error: { code: "NOT_FOUND", message: errorMessages.NOT_FOUND } });
+    res.status(404).json({
+      error: {
+        code: "NOT_FOUND",
+        message: errorMessages.NOT_FOUND,
+        requestId: res.locals.requestId,
+      },
+    });
   });
   app.use(
     (
@@ -1243,14 +1355,24 @@ export function createApp(
         error !== null &&
         "type" in error &&
         error.type === "entity.parse.failed";
+      const oversizedBody =
+        typeof error === "object" &&
+        error !== null &&
+        "type" in error &&
+        error.type === "entity.too.large";
+      if (error instanceof RateLimitedError) {
+        res.setHeader("Retry-After", String(error.retryAfterSeconds));
+      }
       const code =
         error instanceof DomainError
           ? error.code
-          : error instanceof ZodError || badJson
-            ? "VALIDATION"
-            : ["23505", "23503", "23514", "40001", "40P01"].includes(dbCode)
-              ? "CONFLICT"
-              : "INTERNAL";
+          : oversizedBody
+            ? "PAYLOAD_TOO_LARGE"
+            : error instanceof ZodError || badJson
+              ? "VALIDATION"
+              : ["23505", "23503", "23514", "40001", "40P01"].includes(dbCode)
+                ? "CONFLICT"
+                : "INTERNAL";
       if (code === "INTERNAL")
         console.error("Request failed", {
           requestId: res.locals.requestId,

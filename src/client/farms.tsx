@@ -15,6 +15,7 @@ export async function request<T>(
   url: string,
   method = "GET",
   body?: unknown,
+  extraHeaders: Record<string, string> = {},
 ): Promise<T> {
   let response: Response;
   try {
@@ -23,6 +24,7 @@ export async function request<T>(
       headers: {
         ...(body === undefined ? {} : { "content-type": "application/json" }),
         ...(method === "GET" ? {} : { "x-csrf-token": getCsrfToken() ?? "" }),
+        ...extraHeaders,
       },
       body: body === undefined ? undefined : JSON.stringify(body),
     });

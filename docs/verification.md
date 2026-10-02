@@ -422,3 +422,22 @@ source IDs, serta bentuk respons HTTP. Tes fokus lulus; suite serial lulus 82/82
 direktori temp diarahkan ke workspace karena sandbox menolak direktori temp profil
 Windows. `npm run build` dan `npm run format:check` lulus. Tidak ada rasio efisiensi,
 konversi unit, atau mutasi ledger yang ditambahkan.
+
+## P3-01 — Registry perangkat dan ingest telemetry (2026-10-02)
+
+Branch `codex/p3-01-iot-telemetry` menambahkan migration 014, registry perangkat
+farm-scoped, token acak 256-bit yang hanya disimpan sebagai hash, konfigurasi
+metric/unit, endpoint ingest netral-protokol, rate limit persisten, query telemetry,
+dan worker retensi 90 hari. Halaman `/devices` menyediakan create/edit/rotate/revoke,
+pagination, dan state loading/error/empty. Token hanya ditampilkan sekali; browser
+preview ditinggalkan pada halaman ini dengan data akun/farm sintetis untuk pemeriksaan.
+
+`npm run test` lulus 126/126; `npm run typecheck` dan `npm run build` lulus.
+Tes lintas koneksi ada di `tests/postgres/iot.test.ts`, namun `npm run test:postgres`
+melewati dua berkas tes PostgreSQL karena `TEST_DATABASE_URL` tidak tersedia. Tes
+PostgreSQL nyata, deployment produksi, dan kompatibilitas hardware belum diverifikasi.
+`npm run format:check` melaporkan 137 berkas tidak sesuai Prettier di seluruh repo;
+pemeriksaan terarah pada file implementasi P3-01 lulus.
+
+Preview lokal tersedia pada `http://127.0.0.1:5173/devices`. RAG masih berupa draft:
+belum ada knowledge center, katalog sumber hidup, ingestion, maupun vector index.

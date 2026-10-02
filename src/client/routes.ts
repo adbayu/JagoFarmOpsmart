@@ -79,6 +79,12 @@ export const pages = [
     description: "Catat pemindahan air kolam ke area tanam dalam liter.",
   },
   {
+    path: "/devices",
+    label: "Perangkat",
+    group: "Operasional",
+    description: "Kelola perangkat sensor yang terdaftar di farm aktif.",
+  },
+  {
     path: "/harvest",
     label: "Panen",
     group: "Operasional",

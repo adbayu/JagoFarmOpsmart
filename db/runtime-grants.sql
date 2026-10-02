@@ -43,6 +43,16 @@ GRANT UPDATE (is_low, episode_count, updated_at)
   ON TABLE public.inventory_notification_state TO opsmart_runtime;
 GRANT UPDATE (last_success_at)
   ON TABLE public.notification_worker_state TO opsmart_runtime;
+-- Registry updates are restricted to lifecycle/configuration and the persisted
+-- token-bucket state. Farm and unit bindings remain immutable.
+GRANT UPDATE (
+  label, token_hash, status, changed_by, changed_at,
+  revoked_by, revoked_at, rate_limit_tokens, rate_refilled_at
+) ON TABLE public.farm_device TO opsmart_runtime;
+GRANT UPDATE (active, changed_by, changed_at)
+  ON TABLE public.farm_device_metric TO opsmart_runtime;
+GRANT EXECUTE ON FUNCTION public.purge_expired_telemetry(integer)
+  TO opsmart_runtime;
 
 GRANT UPDATE ON TABLE
   public.auth_login_throttle,
@@ -88,6 +98,10 @@ REVOKE UPDATE ON TABLE
 FROM opsmart_runtime;
 
 REVOKE UPDATE, DELETE ON TABLE public.circular_water_transfer FROM opsmart_runtime;
+REVOKE UPDATE, DELETE ON TABLE
+  public.telemetry_reading,
+  public.farm_device_event
+FROM opsmart_runtime;
 
 -- New migration tables default to read/insert only. Grant UPDATE explicitly
 -- only when the application has a mutable lifecycle for that table.
