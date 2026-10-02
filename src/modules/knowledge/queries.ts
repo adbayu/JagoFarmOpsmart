@@ -23,10 +23,13 @@ type SourceRow = {
   has_file: boolean;
   status: KnowledgeSourceStatus;
   created_by: string;
+  created_by_name: string;
   created_at: Date | string;
   approved_by: string | null;
+  approved_by_name: string | null;
   approved_at: Date | string | null;
   revoked_by: string | null;
+  revoked_by_name: string | null;
   revoked_at: Date | string | null;
   content_purged_at: Date | string | null;
 };
@@ -57,10 +60,13 @@ function toSummary(row: SourceRow): KnowledgeSourceSummary {
     hasFile: row.has_file,
     status: row.status,
     createdBy: row.created_by,
+    createdByName: row.created_by_name,
     createdAt: asIso(row.created_at)!,
     approvedBy: row.approved_by,
+    approvedByName: row.approved_by_name,
     approvedAt: asIso(row.approved_at),
     revokedBy: row.revoked_by,
+    revokedByName: row.revoked_by_name,
     revokedAt: asIso(row.revoked_at),
     contentPurgedAt: asIso(row.content_purged_at),
   };
@@ -73,14 +79,21 @@ export async function listKnowledgeSourcesInTransaction(
 ): Promise<KnowledgeSourceSummary[]> {
   await assertFarmMember(tx, actorId, farmId, true);
   const result = await tx.query<SourceRow>(
-    `SELECT id,scope,farm_id,title,publisher,rights_evidence,applicability,
-      version_label,original_reference,effective_at,review_at,file_name,media_type,
-      content_sha256,(content IS NOT NULL) AS has_file,status,created_by,created_at,
-      approved_by,approved_at,revoked_by,revoked_at,content_purged_at
-     FROM knowledge_source
-     WHERE scope='SHARED' OR farm_id=$1
-     ORDER BY CASE WHEN status='ACTIVE' AND review_at <= clock_timestamp() THEN 0 ELSE 1 END,
-       created_at DESC,id DESC
+    `SELECT source.id,source.scope,source.farm_id,source.title,source.publisher,
+      source.rights_evidence,source.applicability,source.version_label,
+      source.original_reference,source.effective_at,source.review_at,source.file_name,
+      source.media_type,source.content_sha256,(source.content IS NOT NULL) AS has_file,
+      source.status,source.created_by,creator.display_name AS created_by_name,
+      source.created_at,source.approved_by,approver.display_name AS approved_by_name,
+      source.approved_at,source.revoked_by,revoker.display_name AS revoked_by_name,
+      source.revoked_at,source.content_purged_at
+     FROM knowledge_source source
+     JOIN app_user creator ON creator.id=source.created_by
+     LEFT JOIN app_user approver ON approver.id=source.approved_by
+     LEFT JOIN app_user revoker ON revoker.id=source.revoked_by
+     WHERE source.scope='SHARED' OR source.farm_id=$1
+     ORDER BY CASE WHEN source.status='ACTIVE' AND source.review_at <= clock_timestamp() THEN 0 ELSE 1 END,
+       source.created_at DESC,source.id DESC
      LIMIT 200`,
     [farmId],
   );

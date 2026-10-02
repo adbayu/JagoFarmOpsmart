@@ -30,6 +30,15 @@ const prettyDate = (value: string) =>
     month: "short",
     day: "numeric",
   });
+const prettyDateTime = (value: string) =>
+  new Date(value).toLocaleString("id-ID", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
 const statusLabel = {
   PENDING_REVIEW: "Menunggu tinjauan",
   ACTIVE: "Disetujui",
@@ -425,6 +434,21 @@ export function KnowledgePage({ state }: { state: FarmsState }) {
                     <div><dt>Tinjau sebelum</dt><dd>{prettyDate(source.reviewAt)}</dd></div>
                     <div><dt>File</dt><dd>{source.fileName ?? "Belum diunggah"}</dd></div>
                   </dl>
+                  <div className="knowledge-audit" aria-label="Riwayat sumber">
+                    <p>
+                      <strong>Dicatat</strong> {prettyDateTime(source.createdAt)} oleh {source.createdByName}
+                    </p>
+                    {source.approvedAt && (
+                      <p>
+                        <strong>Disetujui</strong> {prettyDateTime(source.approvedAt)} oleh {source.approvedByName ?? "Anggota tidak tersedia"}
+                      </p>
+                    )}
+                    {source.revokedAt && (
+                      <p>
+                        <strong>Dicabut</strong> {prettyDateTime(source.revokedAt)} oleh {source.revokedByName ?? "Anggota tidak tersedia"}
+                      </p>
+                    )}
+                  </div>
                   {source.fileName && farmId && (
                     <a
                       className="knowledge-download"

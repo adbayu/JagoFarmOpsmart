@@ -3,7 +3,8 @@
 **Status:** local source-registry slice implemented on `codex/p3-03-knowledge-center`;
 typecheck and build pass. Migration 016 applied in isolated PGlite; production PostgreSQL
 is unverified. The built `/knowledge` form and empty state rendered in the Codex browser;
-upload, review, and revocation interactions remain unverified.
+source cards now include actor names and timestamps. Populated-card rendering, upload,
+review, and revocation interactions remain unverified.
 
 ## Scope
 
@@ -12,6 +13,8 @@ Each source is `SHARED` or scoped to the active farm and starts `PENDING_REVIEW`
 Approval records the actor and time. A source is unavailable to future retrieval
 as soon as it expires or is revoked; its uploaded bytes are purged within 24 hours
 and audit metadata is retained for 90 days. All farm members can manage sources.
+The registry displays the creator, approver, and revoker display names and timestamps
+so farm members can review who recorded each decision.
 
 This slice stores original PDF, Markdown, and text files in the configured
 PostgreSQL database. The 5 MiB size limit is an implementation cap. It does not

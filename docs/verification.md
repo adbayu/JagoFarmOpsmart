@@ -485,6 +485,10 @@ dicabut dari penggunaan saat revoke/expiry, byte file dipurge setelah 24 jam, da
 metadata/audit dipurge setelah 90 hari. Tidak ada ekstraksi, chunk, embedding,
 retrieval, provider eksternal, atau assistant.
 
+Ringkasan sumber kini mengembalikan nama tampilan anggota pembuat, penyetuju, dan
+pencabut beserta waktu aksinya; kartu sumber menampilkan riwayat atribusi tersebut.
+Nama diambil dari `app_user.display_name`, tanpa memuat email anggota.
+
 `npm run typecheck` dan `npm run build` lulus. Migration 016 diterapkan oleh local
 PGlite preview; runtime grants, retensi di PostgreSQL, dan perilaku multi-koneksi
 belum diverifikasi. Automated tests tidak ditambahkan atau dijalankan pada pass ini.

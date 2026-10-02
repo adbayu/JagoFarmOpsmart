@@ -50,10 +50,13 @@ export type KnowledgeSourceSummary = {
   hasFile: boolean;
   status: KnowledgeSourceStatus;
   createdBy: string;
+  createdByName: string;
   createdAt: string;
   approvedBy: string | null;
+  approvedByName: string | null;
   approvedAt: string | null;
   revokedBy: string | null;
+  revokedByName: string | null;
   revokedAt: string | null;
   contentPurgedAt: string | null;
 };

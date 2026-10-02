@@ -45,7 +45,13 @@ const asIso = (value: Date | string | null) =>
       ? value.toISOString()
       : new Date(value).toISOString();
 
-function summary(row: SourceRow): KnowledgeSourceSummary {
+type ActorNames = {
+  created_by_name: string;
+  approved_by_name: string | null;
+  revoked_by_name: string | null;
+};
+
+function summary(row: SourceRow, actors: ActorNames): KnowledgeSourceSummary {
   return {
     id: row.id,
     scope: row.scope,
@@ -64,13 +70,32 @@ function summary(row: SourceRow): KnowledgeSourceSummary {
     hasFile: row.has_file ?? row.file_name !== null,
     status: row.status,
     createdBy: row.created_by,
+    createdByName: actors.created_by_name,
     createdAt: asIso(row.created_at)!,
     approvedBy: row.approved_by,
+    approvedByName: actors.approved_by_name,
     approvedAt: asIso(row.approved_at),
     revokedBy: row.revoked_by,
+    revokedByName: actors.revoked_by_name,
     revokedAt: asIso(row.revoked_at),
     contentPurgedAt: asIso(row.content_purged_at),
   };
+}
+
+async function summarize(tx: Sql, row: SourceRow): Promise<KnowledgeSourceSummary> {
+  const actors = await tx.query<ActorNames>(
+    `SELECT creator.display_name AS created_by_name,
+        approver.display_name AS approved_by_name,
+        revoker.display_name AS revoked_by_name
+     FROM app_user creator
+     LEFT JOIN app_user approver ON approver.id=$2
+     LEFT JOIN app_user revoker ON revoker.id=$3
+     WHERE creator.id=$1`,
+    [row.created_by, row.approved_by, row.revoked_by],
+  );
+  const names = actors.rows[0];
+  if (!names) throw new Error("Knowledge source creator is missing");
+  return summary(row, names);
 }
 
 async function insertEvent(
@@ -132,7 +157,7 @@ export async function createKnowledgeSource(
         scope: parsed.scope,
         farmId,
       });
-      return summary(result.rows[0]!);
+      return summarize(tx, result.rows[0]!);
     },
   );
 }
@@ -214,7 +239,7 @@ export async function attachKnowledgeSourceFile(
         sha256: file.hash,
         sizeBytes: bytes.length,
       });
-      return summary(updated.rows[0]!);
+      return summarize(tx, updated.rows[0]!);
     },
   );
 }
@@ -258,7 +283,7 @@ export async function approveKnowledgeSource(
         [id, context.actorId],
       );
       await insertEvent(tx, id, context.actorId, "APPROVED");
-      return summary(updated.rows[0]!);
+      return summarize(tx, updated.rows[0]!);
     },
   );
 }
@@ -296,7 +321,7 @@ export async function revokeKnowledgeSource(
         [id, context.actorId],
       );
       await insertEvent(tx, id, context.actorId, "REVOKED");
-      return summary(updated.rows[0]!);
+      return summarize(tx, updated.rows[0]!);
     },
   );
 }

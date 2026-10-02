@@ -3150,6 +3150,22 @@ dialog::backdrop {
   color: #24392f;
   overflow-wrap: anywhere;
 }
+.knowledge-audit {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.75rem 0 0;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  color: #5b6b61;
+  background: #f2f6f1;
+  font-size: 0.82rem;
+}
+.knowledge-audit p {
+  margin: 0;
+}
+.knowledge-audit strong {
+  color: #315341;
+}
 .knowledge-download {
   display: inline-flex;
   margin-top: 0.4rem;
