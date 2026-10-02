@@ -108,6 +108,14 @@ REVOKE UPDATE, DELETE ON TABLE
   public.farm_device_event
 FROM opsmart_runtime;
 
+GRANT UPDATE (
+  file_name, media_type, content_sha256, content, status, changed_by, changed_at,
+  approved_by, approved_at, revoked_by, revoked_at,
+  content_purge_after, metadata_purge_after, content_purged_at
+) ON TABLE public.knowledge_source TO opsmart_runtime;
+GRANT EXECUTE ON FUNCTION public.purge_knowledge_sources(integer)
+TO opsmart_runtime;
+
 -- New migration tables default to read/insert only. Grant UPDATE explicitly
 -- only when the application has a mutable lifecycle for that table.
 ALTER DEFAULT PRIVILEGES FOR ROLE opsmart_migrator IN SCHEMA public

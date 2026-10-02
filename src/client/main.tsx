@@ -39,6 +39,7 @@ import { MaggotPage } from "./maggot.js";
 import { WaterTransferPage } from "./water-transfer.js";
 import { NotificationsPage } from "./notifications.js";
 import { DevicesPage } from "./devices.js";
+import { KnowledgePage } from "./knowledge.js";
 import { Icon, type IconName } from "./icons.js";
 import "./styles.css";
 
@@ -63,6 +64,7 @@ const navIcons: Record<(typeof pages)[number]["path"], IconName> = {
   "/finance/costs": "wallet",
   "/finance/hpp": "chart",
   "/analytics": "chart",
+  "/knowledge": "book",
 };
 
 function ModulePage({ page }: { page: (typeof pages)[number] }) {
@@ -287,6 +289,10 @@ function Shell({
               element={<DevicesPage state={farmState} />}
             />
             <Route
+              path="/knowledge"
+              element={<KnowledgePage state={farmState} />}
+            />
+            <Route
               path="/inventory/:itemId"
               element={<InventoryItemPage state={farmState} />}
             />
@@ -329,6 +335,7 @@ function Shell({
                     "/maggot",
                     "/circular/water-transfers",
                     "/devices",
+                    "/knowledge",
                     "/harvest",
                     "/products",
                     "/sales",

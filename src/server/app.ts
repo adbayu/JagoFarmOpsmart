@@ -137,6 +137,16 @@ import {
 } from "../modules/iot/queries.js";
 import { setDeviceMetricAlertConfig } from "../modules/iot/alerts.js";
 import {
+  approveKnowledgeSource,
+  attachKnowledgeSourceFile,
+  createKnowledgeSource,
+  revokeKnowledgeSource,
+} from "../modules/knowledge/service.js";
+import {
+  getKnowledgeSourceFile,
+  listKnowledgeSources,
+} from "../modules/knowledge/queries.js";
+import {
   authenticateAndConsumeRateLimit,
   ingestReadings,
   readBearerToken,
@@ -200,6 +210,100 @@ export function createApp(
     if (!identity) throw new DomainError("UNAUTHORIZED");
     return uuid.parse(identity.userId);
   }
+  app.get("/api/farms/:farmId/knowledge/sources", async (req, res) => {
+    const actorId = await requireActor(req);
+    const farmId = uuid.parse(req.params.farmId);
+    res.json({ data: await listKnowledgeSources(db, actorId, farmId) });
+  });
+  app.post("/api/farms/:farmId/knowledge/sources", async (req, res) => {
+    res.json({
+      data: await createKnowledgeSource(
+        db,
+        {
+          actorId: await requireActor(req),
+          farmId: uuid.parse(req.params.farmId),
+        },
+        req.body,
+      ),
+    });
+  });
+  app.post(
+    "/api/farms/:farmId/knowledge/sources/:sourceId/file",
+    express.raw({ type: "application/octet-stream", limit: "5mb" }),
+    async (req, res) => {
+      let fileName: string;
+      try {
+        fileName = decodeURIComponent(req.get("x-source-file-name") ?? "");
+      } catch {
+        throw new DomainError("VALIDATION");
+      }
+      if (!Buffer.isBuffer(req.body)) throw new DomainError("VALIDATION");
+      res.json({
+        data: await attachKnowledgeSourceFile(
+          db,
+          {
+            actorId: await requireActor(req),
+            farmId: uuid.parse(req.params.farmId),
+          },
+          uuid.parse(req.params.sourceId),
+          req.get("Idempotency-Key") ?? "",
+          fileName,
+          req.body,
+        ),
+      });
+    },
+  );
+  app.post(
+    "/api/farms/:farmId/knowledge/sources/:sourceId/approve",
+    async (req, res) => {
+      res.json({
+        data: await approveKnowledgeSource(
+          db,
+          {
+            actorId: await requireActor(req),
+            farmId: uuid.parse(req.params.farmId),
+          },
+          uuid.parse(req.params.sourceId),
+          req.body,
+        ),
+      });
+    },
+  );
+  app.post(
+    "/api/farms/:farmId/knowledge/sources/:sourceId/revoke",
+    async (req, res) => {
+      res.json({
+        data: await revokeKnowledgeSource(
+          db,
+          {
+            actorId: await requireActor(req),
+            farmId: uuid.parse(req.params.farmId),
+          },
+          uuid.parse(req.params.sourceId),
+          req.body,
+        ),
+      });
+    },
+  );
+  app.get(
+    "/api/farms/:farmId/knowledge/sources/:sourceId/file",
+    async (req, res) => {
+      const file = await getKnowledgeSourceFile(
+        db,
+        await requireActor(req),
+        uuid.parse(req.params.farmId),
+        uuid.parse(req.params.sourceId),
+      );
+      res
+        .setHeader("X-Content-Type-Options", "nosniff")
+        .setHeader(
+          "Content-Disposition",
+          `attachment; filename*=UTF-8''${encodeURIComponent(file.fileName)}`,
+        )
+        .type("application/octet-stream")
+        .send(file.bytes);
+    },
+  );
   app.get("/api/farms/:farmId/devices", async (req, res) => {
     res.json({
       data: await listDevices(

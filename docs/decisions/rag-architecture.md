@@ -1,6 +1,6 @@
 # RAG architecture and source policy
 
-**Status: draft; owner decisions remain open.** This document records constraints,
+**Status: partially approved; owner decisions remain open.** This document records constraints,
 provenance, and implementation candidates. It does not authorize ingestion, external
 provider use, or activation of an assistant. Revisit the live prices and provider
 terms before any implementation is enabled.
@@ -54,7 +54,23 @@ The application source registry should eventually record, at minimum:
 | retention rule and deletion evidence             | Remove source content, chunks, and vectors when due or revoked |
 | original location/reference                      | Preserve traceability to the authoritative document            |
 
-The labels and field list are a design proposal, not an approved policy or migration.
+### Accepted local baseline (2026-10-03)
+
+- A source is either shared across farms or scoped to one farm. Farm sources are
+  visible only to that farm's members; shared sources require an authenticated member.
+- Every upload starts in `PENDING_REVIEW`. A member records the source owner,
+  rights evidence, applicability, version, effective date, and review/expiry date
+  before another member may approve it. All farm members have equal source-management
+  capability, matching OpSmart's internal-use access policy.
+- Approval only records source governance. It does not enable extraction, retrieval,
+  vector storage, AI answers, or recommendations.
+- Revoked or expired sources leave any future retrieval allowlist immediately. Original
+  files and any future derived content must be deleted within 24 hours; source/audit
+  metadata is retained for 90 days after revocation or expiry.
+- The initial implementation stores original files in the configured application
+  database and makes no outbound provider calls. Accepted formats are PDF, Markdown,
+  and TXT, capped at 5 MiB per file. Extraction and indexing remain a later gate.
+
 An expired, revoked, unlicensed, or audience-ambiguous source must be excluded from
 retrieval. Reindexing must replace the prior generation atomically; deletion must cover
 the registry record, extracted text, chunks, and vectors and be auditable.
@@ -126,15 +142,16 @@ the table above remain research-only and are not the selected route.
    its owner and rights evidence, intended audience (shared across farms or farm-scoped),
    applicable species/system, version/effective date, review/expiry rules, and the named
    recommendation rule. No document or corpus is approved by the source-route decision.
-3. **Retention:** choose how long the source files and derived text/chunks/vectors may be
-   retained, and the deletion deadline after expiry or revocation.
+3. **Production storage and deletion:** verify that the selected production database
+   supports this retention path and that its worker can meet the 24-hour purge deadline.
 4. **Provider and budget:** choose local or hosted embeddings, answer-model provider if
    applicable, and the monthly cost ceiling. Hosted providers remain disabled until this
    is explicit.
 
-Until these are resolved, RAG-02 ingestion and P3-04 activation remain gated. RAG-01
-can be marked complete only after the source policy, actual environment compatibility,
-provider/vector choice, retention/deletion path, and cost boundary are recorded.
+Until these are resolved, RAG ingestion, provider use, and P3-04 activation remain
+gated. RAG-01 can be marked complete only after a specific SOP and rights evidence,
+actual environment compatibility, provider/vector choice, and cost boundary are
+recorded. The source/retention baseline above is approved for local implementation.
 
 ## Technical references
 

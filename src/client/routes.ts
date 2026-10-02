@@ -120,4 +120,10 @@ export const pages = [
     group: "Ringkasan data",
     description: "Performa operasional berdasarkan data yang tercatat.",
   },
+  {
+    path: "/knowledge",
+    label: "Pusat Pengetahuan",
+    group: "Ringkasan data",
+    description: "Sumber SOP internal beserta hak pakai dan masa tinjau.",
+  },
 ] as const;

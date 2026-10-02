@@ -419,11 +419,14 @@ Phase 2/3 tidak termasuk task ini. Integrasinya mengikuti extension points di ar
 
 ## Phase 3 — AI Assistant dengan RAG
 
-**Status: direncanakan, belum diimplementasikan.** Belum ada knowledge center di UI,
-katalog sumber yang berjalan, ingestion pipeline, vector index, endpoint, atau chat
-assistant RAG. RAG-01 memiliki catatan keputusan berstatus draft; ingestion dan layanan
-RAG tetap belum diimplementasikan sampai sumber/hak pakai, retensi, hosting,
-provider/vector store, serta batas biaya diputuskan.
+**Status: fondasi Knowledge Center lokal telah diimplementasikan pada branch
+`codex/p3-03-knowledge-center`; typecheck dan build lulus.** Registry dan UI sumber
+terkurasi menyimpan file secara lokal, mewajibkan tinjauan hak pakai, dan menerapkan
+status/retensi. Migration diterapkan di PGlite preview lokal; runtime grants/PostgreSQL
+belum diverifikasi dan UI belum diperiksa di browser. Belum ada
+ekstraksi, chunking, vector index, retrieval, endpoint jawaban, atau chat assistant.
+Keputusan sumber lokal disetujui; SOP aktual, validasi environment produksi, provider,
+vector store, dan batas biaya masih menjadi gate.
 
 ### Referensi `finetune-prep`
 
@@ -488,12 +491,13 @@ flowchart LR
 
 #### RAG-01 — Audit referensi dan keputusan sumber
 
-**Status: draft parsial pada 2026-10-01; jalur sumber awal dipilih, tetapi dokumen dan
-keputusan RAG lainnya masih terbuka.** Pemilik memilih SOP internal dengan hak pakai yang
-jelas sebagai sumber yang akan diunggah untuk rule pertama. File, bukti hak, audience,
-kecocokan komoditas/sistem, versi, dan masa review/expiry belum diberikan; belum ada
-sumber yang disetujui untuk ingestion. Lingkungan produksi, provider, retensi, dan biaya
-juga masih menunggu keputusan. Lihat `docs/decisions/rag-architecture.md`. Kandidat
+**Status: keputusan sumber lokal parsial disetujui pada 2026-10-03.** Batas shared/farm,
+status pending, persetujuan hak pakai, storage lokal, format PDF/Markdown/TXT, serta
+purge konten 24 jam dan audit 90 hari dicatat di
+`docs/decisions/rag-architecture.md`. Pemilik memilih SOP internal dengan hak pakai
+jelas, tetapi file, bukti hak, audience, kecocokan komoditas/sistem, versi, dan masa
+review/expiry belum diberikan; belum ada sumber yang disetujui. Lingkungan produksi,
+provider/vector store, dan biaya tetap terbuka. Kandidat
 eksternal Kementan, KKP, dan WorldFish yang diaudit tetap hanya bahan riset, bukan jalur
 sumber terpilih; tidak ada konten yang diunduh atau diindeks.
 
@@ -515,9 +519,13 @@ sumber terpilih; tidak ada konten yang diunduh atau diindeks.
 
 #### RAG-02 — Registry sumber dan pipeline ingestion deterministik
 
-- **Files:** `db/migrations/016_knowledge_base.sql`,
-  `src/modules/knowledge/{contracts,service,queries,ingest}.ts`,
-  `tests/knowledge-ingest.test.ts`.
+**Status: fondasi registry Knowledge Center tersedia pada branch
+`codex/p3-03-knowledge-center`; ekstraksi/chunk/index belum tersedia.** Upload tetap
+`PENDING_REVIEW`; persetujuan belum mengaktifkan RAG.
+
+- **Files:** `db/migrations/016_knowledge_sources.sql`,
+  `src/modules/knowledge/{contracts,service,queries,retention}.ts`,
+  `src/client/knowledge.tsx`.
 - **Dependencies:** RAG-01.
 - **Required behavior:** ingestion hanya membaca registry/allowlist, memvalidasi format
   dan ukuran, mengekstrak format yang disepakati, menormalkan whitespace sambil
@@ -771,9 +779,10 @@ menambahkan navigasi sebelum endpoint dan status implementasi siap.
 
 ## Phase 3 — IoT dan smart farming
 
-**Status: P3-01 dan P3-02 sudah diimplementasikan pada branch lokal
-`codex/p3-02-monitoring-threshold-alerts`; PostgreSQL nyata untuk P3-02 belum
-diverifikasi.** P3-03 sampai P3-05 belum diimplementasikan.
+**Status: P3-01 tersedia, P3-02 di-commit lokal, dan RAG-02 source registry sedang
+diimplementasikan pada branch `codex/p3-03-knowledge-center`.** PostgreSQL nyata P3-02
+dan Knowledge Center belum diverifikasi. RAG ingestion/vector/chat, P3-04, serta P3-05
+belum diimplementasikan.
 Konektor perangkat nyata dan provider/model AI belum dipilih. Integrasi eksternal yang
 berbiaya atau membutuhkan hardware baru menunggu keputusan provider, protokol, secret,
 dan batas biaya. Membership Phase 2 menjadi boundary akses bersama.
@@ -844,6 +853,10 @@ Empat koreksi review statis setelah hasil tersebut belum diuji ulang; reviewer
 putaran kedua tidak menemukan temuan Critical, Important, atau Minor.
 
 #### P3-03 — RAG knowledge pipeline dan jawaban bersitasi
+
+**Status: Knowledge Center source registry adalah fondasi lokal saja; pipeline jawaban
+belum tersedia.** Tidak ada sumber SOP aktif, ingestion, vector index, retrieval,
+endpoint assistant, atau model/provider yang berjalan.
 
 - **Files/dependencies/acceptance:** ikuti RAG-01–06 di bagian sebelumnya. Sebelum
   RAG-03/05 diaktifkan, pemilik memilih provider/model embedding dan jawaban, sumber

@@ -474,3 +474,19 @@ ID heading bantuan UI. Hasil tes 138/138, typecheck, build, serta Prettier di at
 mendahului koreksi tersebut dan belum dijalankan ulang. Migration/grant, locking,
 dan tes PostgreSQL tetap belum diverifikasi karena `TEST_DATABASE_URL` tidak
 tersedia.
+
+## P3-03 — Knowledge Center source registry (2026-10-03)
+
+Branch `codex/p3-03-knowledge-center` menambahkan migration 016, API metadata dan
+unggah PDF/Markdown/TXT lokal (maks. 5 MiB), cakupan shared/farm, status menunggu
+tinjauan, catatan approval/revoke, unduhan ber-otorisasi, dan retention worker.
+Sumber berstatus pending sampai anggota menyetujui bukti hak pakai. File sumber
+dicabut dari penggunaan saat revoke/expiry, byte file dipurge setelah 24 jam, dan
+metadata/audit dipurge setelah 90 hari. Tidak ada ekstraksi, chunk, embedding,
+retrieval, provider eksternal, atau assistant.
+
+`npm run typecheck` dan `npm run build` lulus. Migration 016 diterapkan oleh local
+PGlite preview; runtime grants, retensi di PostgreSQL, dan perilaku multi-koneksi
+belum diverifikasi. Automated tests tidak ditambahkan atau dijalankan pada pass ini.
+Visual preview belum terbuka: Vite dev optimizer gagal membaca dependency development
+di `node_modules` parent worktree. Belum ada SOP aktual atau bukti hak pakai di registry.

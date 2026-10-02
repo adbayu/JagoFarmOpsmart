@@ -40,7 +40,7 @@
 
 ## Files
 
-- Create: `db/migrations/016_recommendations.sql` after RAG-02 migration 015.
+- Create: `db/migrations/017_recommendations.sql` after RAG-02 migration 016.
 - Modify: `db/runtime-grants.sql`, `src/server/app.ts`, `src/client/routes.ts`, `src/client/main.tsx`, `src/client/styles.css`.
 - Create: `src/modules/recommendations/contracts.ts`, `src/modules/recommendations/evaluator.ts`, `src/modules/recommendations/queries.ts`, `src/modules/recommendations/service.ts`, `src/client/recommendations.tsx`.
 - Create: `tests/recommendations.test.ts`, `tests/postgres/recommendations.test.ts`.
@@ -59,7 +59,7 @@
 ### 2. Current farm evidence and immutable recommendation snapshots
 
 - [ ] **Test first:** add `identicalEvidenceReusesSnapshot`, `changedEvidenceCreatesHistory`, `concurrentEvaluationCreatesOneSnapshot`, and `revokedSopMovesSnapshotToHistory` to the focused service/PostgreSQL tests.
-- [ ] Add migration 016 with farm-scoped instance rows for rule/version, trigger snapshot, evaluated time, source references, SOP revision/citation, and evidence fingerprint. Add the unique key `(farm_id, rule_id, rule_version, evidence_fingerprint)` plus indexes for current and historical listing.
+- [ ] Add migration 017 with farm-scoped instance rows for rule/version, trigger snapshot, evaluated time, source references, SOP revision/citation, and evidence fingerprint. Add the unique key `(farm_id, rule_id, rule_version, evidence_fingerprint)` plus indexes for current and historical listing.
 - [ ] Implement `listFarmEvidence(tx, farmId)` as read-only SQL with membership and farm filters applied in the query. Preserve exact source record IDs/timestamps; accept only the approved RAG-02 revision. HPP evidence requires a current completeness marker; quantities from unlike units stay separate.
 - [ ] Implement `evaluateAndListRecommendations(db, actorId, farmId)` using one farm-scoped transaction. Deduplicate concurrent identical evaluations; never overwrite earlier snapshots.
 - [ ] Do not pre-create `OPEN` rows for every farm member. An absent personal state means `OPEN`; insert/update only that member's explicit `COMPLETED` or `DISMISSED` state. This also covers members who join after a snapshot exists.

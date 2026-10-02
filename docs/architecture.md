@@ -188,19 +188,20 @@ retur stok di luar pembatalan sale, pajak, diskon terpisah, kapital/depresiasi, 
 rounding masih di luar kebijakan MVP. Threshold IoT tidak memiliki nilai bawaan; setiap
 anggota farm dapat mengatur batas per pasangan metric/unit dan stale timeout 60 detik
 sampai 90 hari. Hanya pembacaan GOOD memengaruhi status episode.
-Sumber RAG awal diarahkan ke SOP internal dengan hak pakai jelas, tetapi file, audience,
-bukti hak, retensi, provider/model, vector store, dan batas biaya belum disetujui.
-Catatan RAG-01 berstatus draft parsial di `docs/decisions/rag-architecture.md`;
-belum ada sumber yang disetujui untuk ingestion atau provider yang disetujui untuk
-menerima data farm/SOP.
+Sumber RAG awal diarahkan ke SOP internal dengan hak pakai jelas. Baseline lokal
+menetapkan audience shared atau farm-scoped, pending sampai ditinjau, storage lokal,
+purge konten 24 jam, dan audit 90 hari. Knowledge Center registry/UI sedang dibangun;
+belum ada SOP aktual yang disetujui untuk ingestion. Provider/model, vector store,
+environment produksi, dan batas biaya tetap terbuka di
+`docs/decisions/rag-architecture.md`.
 Akses role berbeda tidak direncanakan; semua anggota farm memiliki akses fitur yang
 sama. Hanya Owner yang menambah atau mengeluarkan anggota non-owner. P2-06 menetapkan
 inbox in-app, reminder 24 jam, alert overdue dan low-stock, polling worker 60 detik,
 serta retensi 90 hari. Implementasinya memakai outbox transaksional untuk fan-out per
 anggota. Dua jalur sirkular yang ditentukan sumber produk sudah tersedia; jalur tambahan
 belum ditentukan. Untuk RAG, SOP internal dipilih sebagai jalur sumber, tetapi file dan
-bukti hak pakainya belum diserahkan. Vector store, provider/model, dan batas biaya masih
-perlu diputuskan.
+bukti hak pakainya belum diserahkan. Vector store, provider/model, environment produksi,
+dan batas biaya masih perlu diputuskan.
 Verifikasi migrasi 001-013, grant runtime, dan tes konkurensi sudah lulus pada
 PostgreSQL 18.4 lokal untuk Task 20 (2026-10-01); deployment produksi belum diverifikasi.
 HPP/profit tetap
