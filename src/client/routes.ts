@@ -1,0 +1,117 @@
+export const pages = [
+  {
+    path: "/dashboard",
+    label: "Dashboard",
+    group: "Ringkasan",
+    description: "Ringkasan farm berdasarkan catatan operasional.",
+  },
+  {
+    path: "/notifications",
+    label: "Notifikasi",
+    group: "Ringkasan",
+    description: "Pengingat jadwal dan perubahan stok farm aktif.",
+  },
+  {
+    path: "/farms",
+    label: "Kelola Farm",
+    group: "Farm",
+    description: "Buat, pilih, ubah, dan arsipkan farm milik Anda.",
+  },
+  {
+    path: "/farm/members",
+    label: "Anggota",
+    group: "Farm",
+    description: "Lihat anggota dan tambahkan akun ke farm aktif.",
+  },
+  {
+    path: "/farm/fish",
+    label: "Ikan",
+    group: "Farm",
+    description: "Kolam, budidaya ikan, dan siklus produksi.",
+  },
+  {
+    path: "/farm/chicken",
+    label: "Ayam",
+    group: "Farm",
+    description: "Kandang, budidaya ayam, dan siklus produksi.",
+  },
+  {
+    path: "/farm/crops",
+    label: "Tanaman",
+    group: "Farm",
+    description: "Area tanam, komoditas, dan siklus tanam.",
+  },
+  {
+    path: "/cycles",
+    label: "Siklus",
+    group: "Operasional",
+    description: "Siklus budidaya ikan, ayam, dan tanaman.",
+  },
+  {
+    path: "/schedule",
+    label: "Jadwal",
+    group: "Operasional",
+    description: "Jadwal dan aktivitas yang terhubung dengan siklus.",
+  },
+  {
+    path: "/inventory",
+    label: "Persediaan",
+    group: "Operasional",
+    description: "Bahan, satuan, lot, dan histori pergerakan stok.",
+  },
+  {
+    path: "/waste",
+    label: "Limbah Organik",
+    group: "Operasional",
+    description: "Catat sumber, jumlah, dan pemrosesan limbah organik farm.",
+  },
+  {
+    path: "/maggot",
+    label: "Maggot",
+    group: "Operasional",
+    description:
+      "Telusuri input limbah, pertumbuhan, hasil, dan pemakaian maggot.",
+  },
+  {
+    path: "/circular/water-transfers",
+    label: "Transfer air",
+    group: "Operasional",
+    description: "Catat pemindahan air kolam ke area tanam dalam liter.",
+  },
+  {
+    path: "/harvest",
+    label: "Panen",
+    group: "Operasional",
+    description: "Hasil panen dan asal siklusnya.",
+  },
+  {
+    path: "/products",
+    label: "Produk",
+    group: "Operasional",
+    description: "Katalog hasil farm yang dapat dijual.",
+  },
+  {
+    path: "/sales",
+    label: "Penjualan",
+    group: "Operasional",
+    description: "Transaksi produk dan status pembayaran.",
+  },
+  {
+    path: "/finance/costs",
+    label: "Biaya",
+    group: "Keuangan",
+    description: "Catatan biaya yang terkait aktivitas farm.",
+  },
+  {
+    path: "/finance/hpp",
+    label: "HPP",
+    group: "Keuangan",
+    description: "Biaya produksi dengan metode perhitungan yang dinyatakan.",
+  },
+  {
+    path: "/analytics",
+    label: "Analitik",
+    group: "Ringkasan data",
+    description: "Performa operasional berdasarkan data yang tercatat.",
+  },
+] as const;
