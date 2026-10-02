@@ -1,6 +1,6 @@
 # Peta status fitur OpSmart
 
-Status berdasarkan kode, UI, dan roadmap pada 2026-10-02. Status "fondasi" berarti
+Status berdasarkan kode, UI, dan roadmap pada 2026-10-03. Status "fondasi" berarti
 schema/kontrak tersedia, tetapi alur pengguna belum terimplementasi.
 
 ## Ringkasan
@@ -11,7 +11,7 @@ schema/kontrak tersedia, tetapi alur pengguna belum terimplementasi.
 | Registry farm        | CRUD farm tersedia; akses operasional setara, Owner menambah dan mengeluarkan anggota                                                                                                                                                                                                                                                                                                   |
 | MVP/Core operasional | Farm sampai penjualan dan pembayaran tersedia di UI/API; revenue/HPP/profit memakai policy `finance-mvp-v1` serta menunjukkan alasan bila input belum lengkap                                                                                                                                                                                                                           |
 | Phase 2              | Lingkup lokal yang disetujui selesai: membership, waste/audit, batch maggot, analitik terukur dan perbandingan, posting same-unit, transfer air, serta inbox tersedia; deployment produksi belum diverifikasi                                                                                                                                                                           |
-| Phase 3              | P3-01 tersedia; P3-02 di-commit lokal pada branch fitur. Knowledge Center source registry/UI tersedia secara lokal pada branch codex/p3-03-knowledge-center; typecheck/build lulus dan migration berjalan di PGlite preview. Runtime grants/PostgreSQL dan UI browser belum diverifikasi. Belum ada SOP yang disetujui, ingestion, vector index, assistant, P3-04, atau P3-05 |
+| Phase 3              | P3-01/02 ada pada riwayat branch fitur yang di-push ke GitHub. Knowledge Center source registry/UI ada di `codex/p3-03-knowledge-center`; typecheck/build lulus, migration 016 berjalan di PGlite, dan form/empty state diperiksa di browser dengan farm sintetis. Runtime grants/PostgreSQL serta upload/review/revoke belum diverifikasi. SOP aktual belum ada; ingestion, vector index, assistant, P3-04, dan P3-05 masih terbuka |
 
 ## MVP/Core menurut task implementasi
 

@@ -190,8 +190,9 @@ anggota farm dapat mengatur batas per pasangan metric/unit dan stale timeout 60 
 sampai 90 hari. Hanya pembacaan GOOD memengaruhi status episode.
 Sumber RAG awal diarahkan ke SOP internal dengan hak pakai jelas. Baseline lokal
 menetapkan audience shared atau farm-scoped, pending sampai ditinjau, storage lokal,
-purge konten 24 jam, dan audit 90 hari. Knowledge Center registry/UI sedang dibangun;
-belum ada SOP aktual yang disetujui untuk ingestion. Provider/model, vector store,
+purge konten 24 jam, dan audit 90 hari. Knowledge Center registry/UI tersedia pada
+branch `codex/p3-03-knowledge-center`; form dan empty state diperiksa pada preview lokal.
+Belum ada SOP aktual yang disetujui untuk ingestion. Provider/model, vector store,
 environment produksi, dan batas biaya tetap terbuka di
 `docs/decisions/rag-architecture.md`.
 Akses role berbeda tidak direncanakan; semua anggota farm memiliki akses fitur yang

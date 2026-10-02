@@ -1,7 +1,9 @@
 # P3-03 — Knowledge Center source registry (local gated slice)
 
 **Status:** local source-registry slice implemented on `codex/p3-03-knowledge-center`;
-typecheck and build pass. Database migration and visual preview remain unverified.
+typecheck and build pass. Migration 016 applied in isolated PGlite; production PostgreSQL
+is unverified. The built `/knowledge` form and empty state rendered in the Codex browser;
+upload, review, and revocation interactions remain unverified.
 
 ## Scope
 

@@ -488,5 +488,9 @@ retrieval, provider eksternal, atau assistant.
 `npm run typecheck` dan `npm run build` lulus. Migration 016 diterapkan oleh local
 PGlite preview; runtime grants, retensi di PostgreSQL, dan perilaku multi-koneksi
 belum diverifikasi. Automated tests tidak ditambahkan atau dijalankan pada pass ini.
-Visual preview belum terbuka: Vite dev optimizer gagal membaca dependency development
-di `node_modules` parent worktree. Belum ada SOP aktual atau bukti hak pakai di registry.
+UI production-build dibuka pada 2026-10-03 di Codex browser melalui preview Vite
+terisolasi `http://127.0.0.1:5180/knowledge` dan PGlite baru dengan akun/farm sintetis.
+Form sumber, batas governance, dan empty state berhasil dirender; operasi upload,
+approval, revoke, dan alur multi-anggota belum diperiksa. Vite dev optimizer tetap gagal
+membaca dependency development di `node_modules` parent worktree. Belum ada SOP aktual
+atau bukti hak pakai di registry.

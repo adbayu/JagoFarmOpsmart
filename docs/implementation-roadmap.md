@@ -422,8 +422,9 @@ Phase 2/3 tidak termasuk task ini. Integrasinya mengikuti extension points di ar
 **Status: fondasi Knowledge Center lokal telah diimplementasikan pada branch
 `codex/p3-03-knowledge-center`; typecheck dan build lulus.** Registry dan UI sumber
 terkurasi menyimpan file secara lokal, mewajibkan tinjauan hak pakai, dan menerapkan
-status/retensi. Migration diterapkan di PGlite preview lokal; runtime grants/PostgreSQL
-belum diverifikasi dan UI belum diperiksa di browser. Belum ada
+status/retensi. Migration diterapkan di PGlite preview lokal; form dan empty state
+diperiksa di browser dengan farm sintetis. Runtime grants/PostgreSQL dan operasi
+upload/review/revoke belum diverifikasi. Belum ada
 ekstraksi, chunking, vector index, retrieval, endpoint jawaban, atau chat assistant.
 Keputusan sumber lokal disetujui; SOP aktual, validasi environment produksi, provider,
 vector store, dan batas biaya masih menjadi gate.
@@ -779,10 +780,10 @@ menambahkan navigasi sebelum endpoint dan status implementasi siap.
 
 ## Phase 3 — IoT dan smart farming
 
-**Status: P3-01 tersedia, P3-02 di-commit lokal, dan RAG-02 source registry sedang
-diimplementasikan pada branch `codex/p3-03-knowledge-center`.** PostgreSQL nyata P3-02
-dan Knowledge Center belum diverifikasi. RAG ingestion/vector/chat, P3-04, serta P3-05
-belum diimplementasikan.
+**Status: P3-01/02 tersedia pada riwayat branch GitHub `codex/p3-03-knowledge-center`;
+RAG-02 source registry telah diimplementasikan di branch tersebut.** PostgreSQL nyata
+P3-02 dan Knowledge Center belum diverifikasi. RAG ingestion/vector/chat, P3-04, serta
+P3-05 belum diimplementasikan.
 Konektor perangkat nyata dan provider/model AI belum dipilih. Integrasi eksternal yang
 berbiaya atau membutuhkan hardware baru menunggu keputusan provider, protokol, secret,
 dan batas biaya. Membership Phase 2 menjadi boundary akses bersama.
