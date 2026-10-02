@@ -5,4 +5,5 @@ coverage/
 *.log
 .pglite/
 .test-temp/
+.worktrees/
 graphify-out/
