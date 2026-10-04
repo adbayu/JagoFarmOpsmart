@@ -104,8 +104,12 @@ test(
       await admin.query(`CREATE SCHEMA ${schema}`);
       for (const name of (await readdir("db/migrations"))
         .filter((file) => file.endsWith(".sql"))
-        .sort())
-        await pool.query(await readFile(`db/migrations/${name}`, "utf8"));
+        .sort()) {
+        let migration = await readFile(`db/migrations/${name}`, "utf8");
+        if (name === "015_iot_alerts.sql")
+          migration = migration.replaceAll("public.", `${schema}.`);
+        await pool.query(migration);
+      }
 
       await t.test("twoConnectionsShareDeviceBucket", async () => {
         const farm = await createFarm(pool, "Rate limit TEST");

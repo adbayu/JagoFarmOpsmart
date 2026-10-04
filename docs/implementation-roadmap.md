@@ -785,10 +785,10 @@ menambahkan navigasi sebelum endpoint dan status implementasi siap.
 
 ## Phase 3 — IoT dan smart farming
 
-**Status: P3-01/02 tersedia pada riwayat branch GitHub `codex/p3-03-knowledge-center`;
-RAG-02 source registry telah diimplementasikan di branch tersebut.** PostgreSQL nyata
-P3-02 dan Knowledge Center belum diverifikasi. RAG ingestion/vector/chat, P3-04, serta
-P3-05 belum diimplementasikan.
+**Status: P3-01/02 tersedia pada branch `codex/p3-03-knowledge-center`; suite
+PostgreSQL lokal lulus 10/10 pada 2026-10-04.** RAG-02 source registry telah
+diimplementasikan; Knowledge Center belum diverifikasi pada PostgreSQL. RAG
+ingestion/vector/chat, P3-04, serta P3-05 belum diimplementasikan.
 Konektor perangkat nyata dan provider/model AI belum dipilih. Integrasi eksternal yang
 berbiaya atau membutuhkan hardware baru menunggu keputusan provider, protokol, secret,
 dan batas biaya. Membership Phase 2 menjadi boundary akses bersama.
@@ -798,7 +798,7 @@ dan batas biaya. Membership Phase 2 menjadi boundary akses bersama.
 #### P3-01 — Registry perangkat dan ingest telemetry
 
 **Status: kode registry, ingest, retensi, dan UI telah diimplementasikan pada
-2026-10-02; tes PostgreSQL nyata belum diverifikasi.** Desain dan rencana ada di
+2026-10-02; tes PostgreSQL lokal lulus.** Desain dan rencana ada di
 `docs/superpowers/specs/2026-10-01-p3-01-iot-telemetry-design.md` dan
 `docs/superpowers/plans/2026-10-02-p3-01-iot-telemetry.md`.
 
@@ -819,15 +819,15 @@ dan batas biaya. Membership Phase 2 menjadi boundary akses bersama.
 - **Tests:** auth token, cross-device/farm, timestamp skew, payload invalid, burst limit,
   retention/index query, PostgreSQL multi-connection.
 
-Suite lokal `npm run test` lulus 126/126; `npm run typecheck` dan `npm run build` lulus.
-`tests/postgres/iot.test.ts` mencakup konkurensi, scope metric, rotasi/revoke, retensi,
-dan ACL, tetapi dilewati karena `TEST_DATABASE_URL` tidak tersedia. Hardware dan
-deployment produksi belum diverifikasi.
+Suite lokal `npm run test` sebelumnya lulus 126/126; pada 2026-10-04
+`tests/postgres/iot.test.ts` lulus 9/9 subtes pada PostgreSQL 18.4. Tes mencakup
+konkurensi, scope metric, rotasi/revoke, retensi, dan ACL. Build lulus pada perubahan
+yang sama. Hardware dan deployment produksi belum diverifikasi.
 
 #### P3-02 — Monitoring dan threshold alerts
 
 **Status: implementasi lokal selesai pada branch `codex/p3-02-monitoring-threshold-alerts`
-pada 2026-10-02; tes PostgreSQL nyata belum diverifikasi.**
+pada 2026-10-02; tes PostgreSQL lokal lulus.**
 
 - **Files:** `db/migrations/015_iot_alerts.sql`,
   `src/modules/iot/{contracts,queries,service,ingest,alerts}.ts`,
@@ -853,10 +853,11 @@ timeout, outbox, serta retensi. Tes fokus lulus 6/6; suite penuh lulus 138/138;
 typecheck dan build lulus. Prettier terarah lulus; pemeriksaan penuh repo masih gagal
 pada 128 berkas lama yang tidak terformat. Preview lokal dengan data sintetis
 diperiksa pada `http://127.0.0.1:5174/devices` dan `/notifications`.
-`npm run test:postgres` melewati dua berkas karena `TEST_DATABASE_URL` tidak ada;
-PostgreSQL nyata belum diverifikasi.
-Empat koreksi review statis setelah hasil tersebut belum diuji ulang; reviewer
-putaran kedua tidak menemukan temuan Critical, Important, atau Minor.
+`npm run test:postgres` lulus 10/10 pada PostgreSQL 18.4 lokal (2026-10-04), termasuk
+pengiriman worker konkurens dan pemeriksaan ACL fungsi.
+Empat koreksi review statis kemudian sudah dicakup oleh tes PostgreSQL dan build
+yang lulus pada 2026-10-04; suite PGlite penuh belum dijalankan ulang setelah koreksi.
+Reviewer putaran kedua tidak menemukan temuan Critical, Important, atau Minor.
 
 #### P3-03 — RAG knowledge pipeline dan jawaban bersitasi
 

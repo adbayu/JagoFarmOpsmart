@@ -475,6 +475,18 @@ mendahului koreksi tersebut dan belum dijalankan ulang. Migration/grant, locking
 dan tes PostgreSQL tetap belum diverifikasi karena `TEST_DATABASE_URL` tidak
 tersedia.
 
+### Verifikasi PostgreSQL 2026-10-04 — P3-01/P3-02
+
+`TEST_DATABASE_URL` terhubung ke database khusus `opsmart_test` pada PostgreSQL
+18.4. `npm run test:postgres` lulus 10/10: transaksi stok/penjualan lintas koneksi
+serta delapan subtes P3-01/P3-02 untuk rate limit, ingest/revoke, scope farm, alert,
+worker, retensi, dan ACL fungsi. `npm run build` juga lulus.
+
+Tes P3-02 sebelumnya gagal karena fungsi cleanup pada migration 015 secara eksplisit
+menyebut schema `public`, sementara tes menjalankan migrasi di schema sementara.
+Fixture tes kini mengganti qualifier `public.` pada migration 015 dengan nama schema
+unik tes; migration produksi tidak diubah.
+
 ## P3-03 — Knowledge Center source registry (2026-10-03)
 
 Branch `codex/p3-03-knowledge-center` menambahkan migration 016, API metadata dan
