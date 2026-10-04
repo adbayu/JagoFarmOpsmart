@@ -1372,7 +1372,7 @@ test("P3-02 migration enforces versioned alert config and one open episode", asy
   assert.equal(preserved.rows[0]?.count, "1");
 });
 
-test("P3-02 config is versioned, idempotent, and reevaluates latest GOOD reading", async () => {
+test("P3-02 identical config stays a no-op after evaluating the latest GOOD reading", async () => {
   const device = await createTestDevice();
   await ingestReadings(registryDb, device.token!, {
     readings: [reading({ reading_id: "before-config", value: "17" })],
@@ -1446,18 +1446,24 @@ test("P3-02 config is versioned, idempotent, and reevaluates latest GOOD reading
     randomUUID(),
     input,
   );
-  assert.equal(memberConfig.version, 2);
-  assert.equal(memberConfig.changedBy, memberId);
+  assert.equal(memberConfig.version, 1);
+  assert.equal(memberConfig.changedBy, context.actorId);
   const versions = await registrySql.query<{
+    configs: string;
     count: string;
     open_count: string;
   }>(
     `SELECT count(*)::text AS count,
-       count(*) FILTER (WHERE resolved_at IS NULL)::text AS open_count
+       count(*) FILTER (WHERE resolved_at IS NULL)::text AS open_count,
+       (SELECT count(*)::text FROM farm_device_alert_config WHERE device_id=$1) AS configs
      FROM farm_device_alert_episode WHERE device_id=$1`,
     [device.deviceId],
   );
-  assert.deepEqual(versions.rows[0], { count: "2", open_count: "1" });
+  assert.deepEqual(versions.rows[0], {
+    configs: "1",
+    count: "1",
+    open_count: "1",
+  });
 
   await assert.rejects(
     setDeviceMetricAlertConfig(

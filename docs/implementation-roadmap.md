@@ -855,8 +855,10 @@ pada 128 berkas lama yang tidak terformat. Preview lokal dengan data sintetis
 diperiksa pada `http://127.0.0.1:5174/devices` dan `/notifications`.
 `npm run test:postgres` lulus 10/10 pada PostgreSQL 18.4 lokal (2026-10-04), termasuk
 pengiriman worker konkurens dan pemeriksaan ACL fungsi.
-Empat koreksi review statis kemudian sudah dicakup oleh tes PostgreSQL dan build
-yang lulus pada 2026-10-04; suite PGlite penuh belum dijalankan ulang setelah koreksi.
+Empat koreksi review statis kemudian dicakup oleh verifikasi 2026-10-04:
+`npm test` lulus 138/138, `npm run test:postgres` lulus 10/10, dan `npm run build`
+lulus. Tes konfigurasi identik memastikan permintaan no-op tidak membuat versi atau
+episode alert tambahan.
 Reviewer putaran kedua tidak menemukan temuan Critical, Important, atau Minor.
 
 #### P3-03 — RAG knowledge pipeline dan jawaban bersitasi

@@ -480,7 +480,9 @@ tersedia.
 `TEST_DATABASE_URL` terhubung ke database khusus `opsmart_test` pada PostgreSQL
 18.4. `npm run test:postgres` lulus 10/10: transaksi stok/penjualan lintas koneksi
 serta delapan subtes P3-01/P3-02 untuk rate limit, ingest/revoke, scope farm, alert,
-worker, retensi, dan ACL fungsi. `npm run build` juga lulus.
+worker, retensi, dan ACL fungsi. Setelah tes konfigurasi identik diselaraskan dengan
+perilaku no-op, `npm test` lulus 138/138 serial maupun melalui script standar; build
+lulus pada kondisi yang sama.
 
 Tes P3-02 sebelumnya gagal karena fungsi cleanup pada migration 015 secara eksplisit
 menyebut schema `public`, sementara tes menjalankan migrasi di schema sementara.
