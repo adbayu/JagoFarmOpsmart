@@ -5,6 +5,22 @@ provenance, and implementation candidates. It does not authorize ingestion, exte
 provider use, or activation of an assistant. Revisit the live prices and provider
 terms before any implementation is enabled.
 
+## Product definition: Knowledge Center and RAG
+
+Knowledge Center is OpSmart's centralized repository for approved organization- and
+domain-specific documents, such as cultivation SOPs and guides. It is the knowledge
+source connected to a Retrieval-Augmented Generation (RAG) system and an LLM. Its
+purpose is to let the assistant retrieve relevant, approved passages and use them as
+evidence for answers with citations. Shared curated material can serve the organization;
+farm-scoped material stays restricted to that farm.
+
+The repository and its source-governance UI are only one layer of this product. The
+complete RAG path also needs document extraction and chunking, embeddings and an index,
+authorized retrieval, and an answer service that supplies retrieved evidence to an LLM.
+Live farm facts are read through authorized farm queries at answer time. These layers
+remain unimplemented or gated as recorded below; the existing source registry alone is
+not a working RAG assistant.
+
 ## Decisions already established
 
 - OpSmart RAG is provider-neutral, read-only, and disabled until its sources, rights,

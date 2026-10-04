@@ -11,7 +11,7 @@ schema/kontrak tersedia, tetapi alur pengguna belum terimplementasi.
 | Registry farm        | CRUD farm tersedia; akses operasional setara, Owner menambah dan mengeluarkan anggota                                                                                                                                                                                                                                                                                                   |
 | MVP/Core operasional | Farm sampai penjualan dan pembayaran tersedia di UI/API; revenue/HPP/profit memakai policy `finance-mvp-v1` serta menunjukkan alasan bila input belum lengkap                                                                                                                                                                                                                           |
 | Phase 2              | Lingkup lokal yang disetujui selesai: membership, waste/audit, batch maggot, analitik terukur dan perbandingan, posting same-unit, transfer air, serta inbox tersedia; deployment produksi belum diverifikasi                                                                                                                                                                           |
-| Phase 3              | P3-01/02 ada pada riwayat branch fitur yang di-push ke GitHub. Knowledge Center source registry/UI ada di `codex/p3-03-knowledge-center`; typecheck/build lulus, migration 016 berjalan di PGlite, form/empty state diperiksa di browser, dan kartu sumber menampilkan nama/waktu actor. Runtime grants/PostgreSQL, kartu berisi data, serta upload/review/revoke belum diverifikasi. SOP aktual belum ada; ingestion, vector index, assistant, P3-04, dan P3-05 masih terbuka |
+| Phase 3              | P3-01/02 ada pada riwayat branch fitur yang di-push ke GitHub. Knowledge Center ditujukan sebagai repositori dokumen organisasi/domain untuk RAG/LLM; yang tersedia di `codex/p3-03-knowledge-center` baru fondasi source registry/UI. Typecheck/build lulus, migration 016 berjalan di PGlite, form/empty state diperiksa di browser, dan kartu sumber menampilkan nama/waktu actor. Runtime grants/PostgreSQL, kartu berisi data, serta upload/review/revoke belum diverifikasi. SOP aktual belum ada; ingestion, vector index, retrieval, assistant, P3-04, dan P3-05 masih terbuka |
 
 ## MVP/Core menurut task implementasi
 
@@ -73,11 +73,13 @@ hardware, API failure/retry, dan tampilan ponsel belum diverifikasi.
 Empat koreksi sesudah review statis belum diuji ulang; review statis kedua tidak
 menemukan temuan Critical, Important, atau Minor.
 
-RAG-01 menyetujui baseline source governance lokal; rincian tetap di
+RAG-01 menyetujui baseline source governance lokal; rincian dan definisi Knowledge
+Center sebagai repositori dokumen pusat yang menjadi sumber RAG/LLM ada di
 `docs/decisions/rag-architecture.md`. Branch `codex/p3-03-knowledge-center` menyediakan
-source registry, upload lokal, status tinjauan, dan retensi untuk bahan sumber. Belum
-ada SOP internal yang diunggah/disetujui; ekstraksi, vector index, retrieval, endpoint/
-chat RAG, provider/model, deployment, dan biaya tetap belum tersedia atau belum dipilih.
+fondasi source registry, upload lokal, status tinjauan, dan retensi untuk bahan sumber.
+Belum ada SOP internal yang diunggah/disetujui; ekstraksi, chunking, vector index,
+retrieval, endpoint/chat RAG, provider/model, deployment, dan biaya tetap belum tersedia
+atau belum dipilih.
 P3-04 baru disetujui pada tingkat desain; belum ada implementasi rekomendasi.
 
 ## Yang terlihat di UI sekarang

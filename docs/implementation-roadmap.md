@@ -429,6 +429,11 @@ ekstraksi, chunking, vector index, retrieval, endpoint jawaban, atau chat assist
 Keputusan sumber lokal disetujui; SOP aktual, validasi environment produksi, provider,
 vector store, dan batas biaya masih menjadi gate.
 
+**Definisi produk:** Knowledge Center adalah repositori terpusat dokumen organisasi
+dan domain yang menjadi sumber bukti bagi RAG/LLM OpSmart. Registry sumber yang sudah
+ada baru lapisan penyimpanan dan tata kelola; fungsi RAG utuh baru tercapai setelah
+ingestion, indexing, retrieval yang farm-scoped, dan jawaban LLM bersitasi tersedia.
+
 ### Referensi `finetune-prep`
 
 Arsip `finetune-prep-a.zip` yang diberikan pemilik proyek berisi aplikasi RAG lengkap,
@@ -518,7 +523,7 @@ sumber terpilih; tidak ada konten yang diunduh atau diindeks.
 - **Verification:** tinjau threat model untuk dokumen berisi prompt injection,
   dokumen kedaluwarsa, pencabutan akses, dan data lintas farm.
 
-#### RAG-02 — Registry sumber dan pipeline ingestion deterministik
+#### RAG-02 — Knowledge Center: registry sumber dan pipeline ingestion deterministik
 
 **Status: fondasi registry Knowledge Center tersedia pada branch
 `codex/p3-03-knowledge-center`; ekstraksi/chunk/index belum tersedia.** Upload tetap
@@ -855,8 +860,9 @@ putaran kedua tidak menemukan temuan Critical, Important, atau Minor.
 
 #### P3-03 — RAG knowledge pipeline dan jawaban bersitasi
 
-**Status: Knowledge Center source registry adalah fondasi lokal saja; pipeline jawaban
-belum tersedia.** Tidak ada sumber SOP aktif, ingestion, vector index, retrieval,
+**Status: Knowledge Center adalah target repositori dokumen terpusat yang terhubung ke
+RAG/LLM, sedangkan source registry saat ini baru fondasi lokal.** Pipeline jawaban
+belum tersedia: tidak ada sumber SOP aktif, ingestion, vector index, retrieval,
 endpoint assistant, atau model/provider yang berjalan.
 
 - **Files/dependencies/acceptance:** ikuti RAG-01–06 di bagian sebelumnya. Sebelum
