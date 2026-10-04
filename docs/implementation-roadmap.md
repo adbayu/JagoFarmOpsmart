@@ -886,6 +886,9 @@ endpoint assistant, atau model/provider yang berjalan.
 
 #### P3-05 — Virtual Pet sebagai companion opsional
 
+- **Arahan pemilik (2026-10-04):** Virtual Pet dibangun sebagai modul terpisah lalu
+  diintegrasikan ke OpSmart. P3-05 di aplikasi ini menunggu modul tersebut; batas
+  read-only/tanpa mutasi tetap berlaku.
 - **Files:** client route/component, state/query assistant yang telah tersedia, visual assets.
 - **Dependencies:** P3-03/P3-04; persona, nama, dan gaya visual dikonfirmasi sebelum
   produksi visual. Pet tidak memiliki tool mutasi.
