@@ -253,6 +253,18 @@ export function createStandups(db: Database, runtime: StandupRuntime = {}) {
           published_at=CASE WHEN $7 THEN $8::timestamptz ELSE daily_standup.published_at END,updated_at=$8`,
         params,
       );
+      if (input.publish)
+        await tx.query(
+          `INSERT INTO kolab_standup_delivery
+             (user_id,report_date,status,attempt_count,next_attempt_at,created_at,updated_at)
+           VALUES($1,$2,'PENDING',0,$3,$3,$3)
+           ON CONFLICT(user_id,report_date) DO UPDATE SET
+             status='PENDING',attempt_count=0,next_attempt_at=EXCLUDED.next_attempt_at,
+             lease_expires_at=NULL,completed_at=NULL,last_error_code=NULL,
+             updated_at=EXCLUDED.updated_at
+           WHERE kolab_standup_delivery.status NOT IN ('SENT','ALREADY_PRESENT')`,
+          [actor, input.date, stamp.toISOString()],
+        );
       const response = await own(tx, actor, input.date);
       await tx.query(
         `INSERT INTO standup_command_receipt(user_id,idempotency_key,request_hash,response,created_at)

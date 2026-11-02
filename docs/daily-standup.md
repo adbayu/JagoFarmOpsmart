@@ -39,6 +39,46 @@ yang sudah berhasil tetap dapat dikonfirmasi setelah tenggat. Draf dan publikasi
 memakai kolom terpisah. DTO rekap hanya memilih kolom publikasi. Actor berasal
 dari sesi dan mutasi melewati pelindung origin/CSRF yang sudah ada.
 
+## Pengiriman ke Kolab
+
+OpSmart dapat mengirim publikasi final setiap akun ke akun Kolab milik akun itu
+sendiri. Antrean dibuat hanya saat laporan dipublikasikan. Worker server berjalan
+setiap menit dan baru membuka Kolab setelah pukul 12.00 WIB; draf tidak dikirim.
+Jika server tidak aktif saat tenggat, antrean dapat diproses setelah server hidup
+kembali selama laporan belum lebih dari 20 hari.
+
+Kolab belum menyediakan integrasi API yang dipakai fitur ini. Worker memakai
+Playwright pada halaman rekap yang terlihat. Setiap anggota harus menautkan akun
+Kolab sendiri satu kali:
+
+1. Jalankan `npx playwright install chromium` pada komputer anggota dan server.
+2. Jalankan `npm run kolab:connect`, login manual pada jendela yang terbuka, lalu
+   tekan Enter di terminal setelah halaman rekap menampilkan sapaan akun.
+3. Unggah file JSON sementara yang dihasilkan ke akun OpSmart sendiri pada kartu
+   **Kirim standup ke Kolab**. Hapus file lokal setelah unggah.
+
+Jangan membagikan file sesi tersebut. Isinya dapat dipakai untuk mengakses akun
+Kolab. OpSmart mengenkripsi file dengan AES-256-GCM sebelum menyimpannya dan tidak
+menyimpan password. Satu nilai `KOLAB_SESSION_ENCRYPTION_KEY` base64 berisi 32 byte
+harus disimpan sebagai secret server dan dipertahankan saat restart. Mengganti key
+membuat sesi tersimpan tidak dapat dibaca, sehingga setiap anggota perlu menautkan
+ulang akunnya.
+
+Untuk mengaktifkan pengiriman, set `KOLAB_SYNC_ENABLED=true` dan
+`KOLAB_SESSION_ENCRYPTION_KEY` pada server API, pasang Chromium beserta dependensi
+sistemnya, terapkan migration 015, lalu terapkan ulang `db/runtime-grants.sql`.
+Gunakan server Node yang selalu hidup dan dapat membuka koneksi HTTPS ke Kolab.
+Worker tidak dijalankan dari preview lokal. Tanpa konfigurasi lengkap, fitur tetap
+nonaktif.
+
+Status menunjukkan menunggu, terkirim, sesi perlu dihubungkan ulang, gagal, atau
+perlu diperiksa. Worker mencoba ulang kegagalan jaringan yang diketahui maksimal
+tiga kali. Hasil simpan yang tidak pasti dan perubahan pada formulir Kolab masuk
+ke **Perlu diperiksa**; periksa rekap Kolab sebelum memilih kirim ulang. Pengiriman
+ulang terlebih dahulu memeriksa apakah laporan hari itu sudah ada. Sesi dapat
+kedaluwarsa dan perubahan tampilan Kolab dapat memerlukan tautan ulang atau tinjauan
+manual.
+
 Jika versi konflik, salin teks sebelum memilih **Muat versi terbaru**. Jika hasil
 penyimpanan belum pasti, **Coba lagi** memakai key dan payload yang sama. Response
 tidak valid diperlakukan sebagai hasil belum pasti; key tidak dibuang.
@@ -64,7 +104,9 @@ perubahan kalender kemudian menjadikan tanggalnya hari libur.
 - Jalankan `npm run db:migrate` dengan `MIGRATION_DATABASE_URL` milik migrator.
 - Terapkan ulang `db/runtime-grants.sql` sebagai administrator jika menggunakan
   role runtime terpisah. Tabel `daily_standup` dan `standup_holiday_calendar`
-  memerlukan UPDATE; reminder/receipt hanya SELECT dan INSERT.
+  memerlukan UPDATE; reminder/receipt hanya SELECT dan INSERT. Integrasi Kolab
+  memerlukan SELECT/INSERT/UPDATE pada `kolab_standup_delivery` dan
+  SELECT/INSERT/UPDATE/DELETE pada `kolab_account_session`.
 - Restart API setelah migration. `npm run dev` menerapkan migration sebelum
   menjalankan API; preview lokal menggunakan migration yang sama.
 - Pastikan server dapat mengakses HTTPS provider dan jam sistem tersinkron.

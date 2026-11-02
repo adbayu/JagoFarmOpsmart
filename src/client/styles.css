@@ -72,8 +72,37 @@
   color: #823e2d;
 }
 .standup-composer,
-.standup-recap {
+.standup-recap,
+.kolab-sync-card {
   margin-bottom: 1.25rem;
+}
+.kolab-sync-card .form-field {
+  max-width: 32rem;
+}
+.kolab-sync-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin: 1rem 0;
+}
+.kolab-deliveries {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.kolab-deliveries li {
+  display: grid;
+  grid-template-columns: minmax(9rem, 1fr) minmax(14rem, 2fr);
+  gap: 0.2rem 1rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--line);
+}
+.kolab-delivery-error {
+  grid-column: 1 / -1;
+  color: #823e2d;
+  font-size: 0.86rem;
 }
 .standup-composer fieldset {
   display: grid;
@@ -145,6 +174,12 @@
   }
   .standup-recap td:last-child {
     min-width: 16rem;
+  }
+  .kolab-deliveries li {
+    grid-template-columns: 1fr;
+  }
+  .kolab-delivery-error {
+    grid-column: auto;
   }
 }
 

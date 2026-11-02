@@ -20,6 +20,10 @@ import type {
   StandupFields,
   StandupRecap,
 } from "../modules/standups/contracts.js";
+import {
+  kolabSyncStatusSchema,
+  type KolabSyncStatus,
+} from "../modules/kolab-sync/contracts.js";
 
 class StandupError extends Error {
   constructor(
@@ -70,6 +74,23 @@ const statusLabels = {
   PENDING: "Belum mengisi",
   MISSED: "Tidak mengisi",
 } as const;
+const kolabStatusLabels = {
+  PENDING: "Menunggu pengiriman setelah pukul 12.00 WIB",
+  SENDING: "Sedang mengirim",
+  SENT: "Terkirim",
+  ALREADY_PRESENT: "Laporan sudah ada di Kolab",
+  NEEDS_SESSION: "Akun Kolab perlu dihubungkan ulang",
+  NEEDS_REVIEW: "Perlu diperiksa di Kolab",
+  FAILED: "Pengiriman gagal setelah beberapa percobaan",
+} as const;
+const kolabErrorLabels: Record<string, string> = {
+  SESSION_REQUIRED: "Sesi Kolab perlu dihubungkan ulang.",
+  LOGIN_REQUIRED: "Sesi Kolab kedaluwarsa atau tidak lagi valid.",
+  FORM_CHANGED: "Tampilan formulir Kolab berubah dan perlu diperiksa.",
+  SUBMIT_UNCERTAIN: "Hasil pengiriman perlu diperiksa di Kolab.",
+  NETWORK: "Koneksi ke Kolab gagal.",
+  TOO_OLD: "Laporan terlalu lama untuk dikirim otomatis.",
+};
 function dateLabel(date: string) {
   return new Intl.DateTimeFormat("id-ID", {
     timeZone: "Asia/Jakarta",
@@ -81,6 +102,13 @@ function timeLabel(date: string) {
     timeZone: "Asia/Jakarta",
     hour: "2-digit",
     minute: "2-digit",
+  }).format(new Date(date));
+}
+function dateTimeLabel(date: string) {
+  return new Intl.DateTimeFormat("id-ID", {
+    timeZone: "Asia/Jakarta",
+    dateStyle: "medium",
+    timeStyle: "short",
   }).format(new Date(date));
 }
 function fields(own: StandupFields): StandupFields {
@@ -600,6 +628,7 @@ export function StandupsPage({ state }: { state: StandupState }) {
   }, [date, attempt, current?.serverNow]);
   return (
     <>
+      <KolabSyncCard />
       <Card title="Rekap tim" className="standup-recap">
         <FormField id="standup-date" label="Tanggal laporan (WIB)">
           <input
@@ -676,5 +705,183 @@ export function StandupsPage({ state }: { state: StandupState }) {
         )}
       </Card>
     </>
+  );
+}
+
+function KolabSyncCard() {
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [sync, setSync] = useState<KolabSyncStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    let live = true;
+    setLoading(true);
+    const refresh = () => {
+      void api("/kolab", kolabSyncStatusSchema)
+        .then((data) => {
+          if (live) {
+            setSync(data);
+            setError(null);
+          }
+        })
+        .catch((failure) => {
+          if (live) setError((failure as Error).message);
+        })
+        .finally(() => {
+          if (live) setLoading(false);
+        });
+    };
+    refresh();
+    const interval = window.setInterval(refresh, 30_000);
+    return () => {
+      live = false;
+      window.clearInterval(interval);
+    };
+  }, [attempt]);
+
+  async function uploadSession(file: File | undefined) {
+    if (!file) return;
+    setBusy(true);
+    setError(null);
+    try {
+      if (file.size > 80_000)
+        throw new Error("File sesi Kolab harus berukuran maksimal 80 KB.");
+      const payload: unknown = JSON.parse(await file.text());
+      const data = await api("/kolab/session", kolabSyncStatusSchema, payload);
+      setSync(data);
+    } catch (failure) {
+      setError(
+        (failure as Error).message || "File sesi Kolab tidak dapat dibaca.",
+      );
+    } finally {
+      if (fileInput.current) fileInput.current.value = "";
+      setBusy(false);
+    }
+  }
+
+  async function act(path: "/kolab/disconnect" | "/kolab/retry") {
+    setBusy(true);
+    setError(null);
+    try {
+      const data = await api(path, kolabSyncStatusSchema, {});
+      setSync(data);
+    } catch (failure) {
+      setError((failure as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const canRetry = Boolean(
+    sync?.deliveries.some(
+      (delivery) =>
+        delivery.status === "FAILED" || delivery.status === "NEEDS_REVIEW",
+    ),
+  );
+  return (
+    <Card title="Kirim standup ke Kolab" className="kolab-sync-card">
+      <p>
+        Laporan final akun ini dikirim ke akun Kolab yang terhubung setelah
+        pukul 12.00 WIB. Draf tidak ikut dikirim.
+      </p>
+      {loading && <p role="status">Memuat status akun Kolab…</p>}
+      {!loading && sync?.connectedAt && (
+        <p role="status">
+          Akun Kolab terhubung sejak {dateTimeLabel(sync.connectedAt)} WIB.
+        </p>
+      )}
+      {!loading && sync && !sync.enabled && (
+        <p className="standup-warning" role="status">
+          Pengiriman Kolab belum diaktifkan di server OpSmart.
+        </p>
+      )}
+      {!loading && sync?.enabled && (
+        <>
+          {!sync.connectedAt && (
+            <p role="status">Akun Kolab belum terhubung.</p>
+          )}
+          <FormField id="kolab-session-file" label="File sesi Kolab (JSON)">
+            <input
+              ref={fileInput}
+              id="kolab-session-file"
+              type="file"
+              accept="application/json,.json"
+              disabled={busy}
+              onChange={(event) =>
+                void uploadSession(event.currentTarget.files?.[0])
+              }
+            />
+          </FormField>
+          <p className="standup-note">
+            Buat file melalui <code>npm run kolab:connect</code>, unggah hanya
+            ke akun OpSmart Anda, lalu hapus file lokalnya. Password Kolab tidak
+            disimpan.
+          </p>
+        </>
+      )}
+      {(sync?.enabled && canRetry) || sync?.connectedAt ? (
+        <div className="kolab-sync-actions">
+          {sync?.enabled && canRetry && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void act("/kolab/retry")}
+            >
+              Coba kirim ulang laporan bermasalah
+            </button>
+          )}
+          {sync?.connectedAt && (
+            <button
+              type="button"
+              className="secondary"
+              disabled={busy}
+              onClick={() => {
+                if (
+                  window.confirm(
+                    "Putuskan sesi Kolab yang tersimpan di akun OpSmart ini?",
+                  )
+                )
+                  void act("/kolab/disconnect");
+              }}
+            >
+              Putuskan akun Kolab
+            </button>
+          )}
+        </div>
+      ) : null}
+      {busy && <p role="status">Memproses aksi akun Kolab…</p>}
+      {sync && sync.deliveries.length > 0 && (
+        <ul className="kolab-deliveries" aria-label="Status pengiriman Kolab">
+          {sync.deliveries.slice(0, 5).map((delivery) => (
+            <li key={delivery.date}>
+              <span>{dateLabel(delivery.date)}</span>
+              <span>
+                {delivery.status === "PENDING" &&
+                delivery.lastErrorCode === "NETWORK"
+                  ? "Menunggu percobaan ulang"
+                  : kolabStatusLabels[delivery.status]}
+              </span>
+              {delivery.lastErrorCode && (
+                <span className="kolab-delivery-error">
+                  {kolabErrorLabels[delivery.lastErrorCode] ??
+                    "Perlu diperiksa."}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {error && (
+        <StatePanel
+          kind="error"
+          title="Status Kolab belum dapat diperbarui"
+          onRetry={() => setAttempt((value) => value + 1)}
+        >
+          {error}
+        </StatePanel>
+      )}
+    </Card>
   );
 }

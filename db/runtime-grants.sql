@@ -43,6 +43,10 @@ GRANT UPDATE (is_low, episode_count, updated_at)
   ON TABLE public.inventory_notification_state TO opsmart_runtime;
 GRANT UPDATE (last_success_at)
   ON TABLE public.notification_worker_state TO opsmart_runtime;
+GRANT UPDATE ON TABLE
+  public.kolab_account_session,
+  public.kolab_standup_delivery
+TO opsmart_runtime;
 
 GRANT UPDATE ON TABLE
   public.auth_login_throttle,
@@ -74,6 +78,7 @@ GRANT DELETE ON TABLE public.pond, public.coop, public.growing_area
 TO opsmart_runtime;
 GRANT DELETE ON TABLE public.farm_notification, public.notification_outbox
 TO opsmart_runtime;
+GRANT DELETE ON TABLE public.kolab_account_session TO opsmart_runtime;
 GRANT DELETE ON TABLE public.farm_membership TO opsmart_runtime;
 REVOKE UPDATE ON TABLE
   public.inventory_movement,

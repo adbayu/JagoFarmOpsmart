@@ -8,6 +8,15 @@ export const standupDayStates = [
   "NOT_STARTED",
   "NOT_ELIGIBLE",
 ] as const;
+export const kolabDeliveryStatuses = [
+  "PENDING",
+  "SENDING",
+  "SENT",
+  "ALREADY_PRESENT",
+  "NEEDS_SESSION",
+  "NEEDS_REVIEW",
+  "FAILED",
+] as const;
 export const cycleStatuses = [
   "PLANNED",
   "ACTIVE",

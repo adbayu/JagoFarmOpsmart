@@ -8,6 +8,8 @@ export const errorMessages = {
   INSUFFICIENT_STOCK: "Stok tidak mencukupi.",
   STANDUP_CLOSED:
     "Pengisian standup ditutup. Laporan hanya dapat diubah pada hari kerja sebelum pukul 12.00 WIB.",
+  INTEGRATION_NOT_READY:
+    "Integrasi Kolab belum siap di server. Hubungi pengelola OpSmart.",
   INTERNAL: "Permintaan gagal disimpan. Silakan coba lagi.",
 } as const;
 export type ErrorCode = keyof typeof errorMessages;
@@ -25,5 +27,6 @@ export const httpStatus: Record<ErrorCode, number> = {
   CONFLICT: 409,
   INSUFFICIENT_STOCK: 409,
   STANDUP_CLOSED: 409,
+  INTEGRATION_NOT_READY: 503,
   INTERNAL: 500,
 };
