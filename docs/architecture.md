@@ -3,12 +3,14 @@
 ## Stack dan batas fase
 
 Satu package TypeScript strict: React 19 + Vite 7 + React Router 7 di client, Express 5
-di server, PostgreSQL 17+ lewat pg 8, Zod 4, Node test runner + tsx + PGlite untuk tes.
-Prettier mengatur format. Tidak ada ORM, global state library, microservice, event bus,
-analytics database, queue atau cache server. Versi patch aktual ada di lockfile.
+di server, PostgreSQL 17+ lewat pg 8, Zod 4, Node test runner + tsx, dan PGlite untuk
+tes serta preview lokal opsional. `npm run dev` menjalankan PostgreSQL Docker, migrasi,
+API, dan Vite. Prettier mengatur format. Tidak ada ORM, global state library, microservice,
+event bus, analytics database, queue atau cache server. Versi patch aktual ada di lockfile.
 
 SQL migrations dipilih agar constraint dan transaction boundary terlihat langsung.
-PGlite hanya dependency pengujian; runtime produksi menggunakan PostgreSQL melalui pg.
+PGlite dipakai untuk tes dan preview lokal opsional; API development dan produksi memakai
+PostgreSQL melalui pg.
 Next.js/ORM adalah alternatif yang masuk akal, tetapi tidak diperlukan untuk shell SPA
 dan contoh transaksi eksplisit ini. Pilihan ini tercatat sebagai keputusan teknis Phase 1.
 
@@ -204,9 +206,20 @@ PostgreSQL 18.4 lokal untuk Task 20 (2026-10-01); deployment produksi belum dive
 HPP/profit tetap
 `UNAVAILABLE` saat data sumber belum lengkap.
 
+## Daily Standup internal (2026-10-26)
+
+Modul `src/modules/standups` memakai tabel global per akun melalui migration 014.
+Ini pengecualian akses lintas farm yang disetujui untuk laporan pekerjaan internal;
+query domain farm tetap wajib memfilter farm_id. Publikasi dibaca semua akun dengan
+sesi valid; draf hanya pemilik. Mutasi menggunakan lock akun, versi optimistis,
+dan receipt tersendiri agar tidak menciptakan farm semu atau command farm bersarang.
+Kalender libur diperoleh di luar transaksi, disimpan per tahun, dan dipakai sebagai
+fallback saat provider gagal. Detail kebijakan dan deployment ada di
+[daily-standup.md](daily-standup.md).
+
 ## Rujukan teknis yang diperiksa
 
 [PostgreSQL row locks](https://www.postgresql.org/docs/current/explicit-locking.html),
 [PGlite](https://pglite.dev/docs/), [Vite](https://vite.dev/guide/).
-PGlite menjalankan schema PostgreSQL untuk tes lokal; bukti konkurensi multi-connection
-tetap memerlukan server PostgreSQL terpisah.
+PGlite menjalankan schema PostgreSQL untuk tes dan preview lokal; bukti konkurensi
+multi-connection tetap memerlukan server PostgreSQL terpisah.

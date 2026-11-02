@@ -1,6 +1,23 @@
 import type { ReactNode } from "react";
 
 const glyphs = {
+  book: (
+    <>
+      <path d="M12 5c-3-2-6-2-10-1v15c4-1 7-1 10 1 3-2 6-2 10-1V4c-4-1-7-1-10 1Zm0 0v15" />
+    </>
+  ),
+  message: (
+    <>
+      <path d="M21 14a3 3 0 0 1-3 3H8l-5 4V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3Z" />
+      <path d="M7 8h10M7 12h6" />
+    </>
+  ),
+  key: (
+    <>
+      <circle cx="8" cy="9" r="5" />
+      <path d="m12 13 8 8m-4-4 3-3m-6 0 3-3" />
+    </>
+  ),
   home: (
     <>
       <path d="m3 10 9-7 9 7v10H3z" />

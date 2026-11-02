@@ -61,34 +61,45 @@ Panduan untuk grant database, sesi produksi, proxy, dan logging ada di
 
 ## Menjalankan
 
-Prasyarat: Node >=22.12, npm. Versi dependency aktual dikunci di package-lock.json.
+Prasyarat: Node >=22.12, npm, Docker Desktop aktif. Versi dependency aktual
+dikunci di package-lock.json.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Buka alamat localhost yang dicetak Vite. Layar masuk dapat dibuka tanpa database;
-pendaftaran dan data farm memerlukan API.
+Buka `http://127.0.0.1:5173`. Perintah ini menyalakan PostgreSQL 17 di Docker,
+menunggu database siap, menjalankan migrasi, lalu menyalakan API dan frontend.
+Database hanya bind ke loopback dan datanya bertahan di Docker volume
+`opsmart-postgres-data`. Ctrl+C menghentikan API dan frontend; database tetap
+hidup. Untuk menghentikan container database tanpa menghapus datanya, jalankan:
 
-Untuk preview lokal tanpa memasang PostgreSQL, jalankan API PGlite di terminal
-terpisah:
+```sh
+npm run db:down
+```
+
+`npm run dev` menggunakan database Docker. Akun di database PGlite preview tidak
+ikut dipindahkan; buat akun lagi melalui UI setelah pertama kali menjalankan stack.
+
+Untuk menjalankan API PGlite preview saja:
 
 ```sh
 npm run dev:server:preview
 ```
 
-API ini hanya bind ke `127.0.0.1`, mengikuti Vite pada port 5173, dan menyimpan
-data preview di `.pglite/preview` agar akun tetap ada setelah restart.
+API ini hanya bind ke `127.0.0.1` dan mengikuti Vite pada port 5173. Cara ini
+terpisah dari database Docker yang digunakan `npm run dev`.
 
-Untuk API PostgreSQL, siapkan PostgreSQL 17+ lokal, salin `.env.example` menjadi
-`.env`, isi DATABASE_URL dan APP_ORIGIN (harus sama dengan alamat browser), lalu
-jalankan di terminal terpisah:
+Untuk memakai PostgreSQL lain, salin `.env.example` menjadi `.env`, isi
+DATABASE_URL dan APP_ORIGIN (harus sama dengan alamat browser), lalu jalankan:
 
 ```sh
 npm run db:migrate
 npm run dev:server
 ```
+
+Di terminal lain, jalankan frontend dengan `npm run dev:frontend`.
 
 `GET /api/health` memeriksa proses, bukan kesiapan database. Daftar akun melalui UI,
 lalu buat farm pertama. Identitas hanya berasal dari cookie sesi; header user diabaikan.
@@ -113,6 +124,20 @@ PostgreSQL hanya berjalan jika `TEST_DATABASE_URL` diisi; status terkini ada di
 `dist/client` adalah aset frontend; host harus mengarahkan route non-file ke index.html.
 `npm start` menjalankan API hasil build di `127.0.0.1:3001`. Production reverse proxy
 mengirim `/api` ke API dan route lainnya ke frontend. Hosting/deployment belum dibuat.
+
+## Education (halaman persiapan AI RAG)
+
+Menu **Education** (`/education`) memiliki Tanya AI, Kelola Knowledge, dan Kelola API.
+Contoh pertanyaan mengisi draf; jawaban AI, unggah dokumen, dan penyimpanan koneksi
+belum aktif. Sumber SOP dan provider belum ditetapkan; status rinci ada di
+[keputusan RAG](docs/decisions/rag-architecture.md).
+
+## Daily Standup internal
+
+Menu **Daily Standup** menyediakan draf privat, pengiriman eksplisit, rekap tim
+lintas farm, serta pengingat Senin–Jumat sebelum 12.00 WIB, kecuali libur nasional
+dan cuti bersama. Terapkan migration 014 dan perbarui runtime grants saat deploy.
+Lihat [alur dan deployment Daily Standup](docs/daily-standup.md).
 
 ## Sumber dan status
 

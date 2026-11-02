@@ -6,6 +6,12 @@ export const pages = [
     description: "Ringkasan farm berdasarkan catatan operasional.",
   },
   {
+    path: "/standups",
+    label: "Daily Standup",
+    group: "Ringkasan",
+    description: "Rencana pekerjaan harian dan rekap laporan seluruh tim.",
+  },
+  {
     path: "/notifications",
     label: "Notifikasi",
     group: "Ringkasan",
@@ -113,5 +119,11 @@ export const pages = [
     label: "Analitik",
     group: "Ringkasan data",
     description: "Performa operasional berdasarkan data yang tercatat.",
+  },
+  {
+    path: "/education",
+    label: "Education",
+    group: "Pengetahuan",
+    description: "SOP, knowledge, dan asisten edukasi budidaya.",
   },
 ] as const;

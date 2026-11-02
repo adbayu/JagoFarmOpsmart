@@ -132,6 +132,8 @@ import {
 } from "../modules/farming/cycle-queries.js";
 import type { Database } from "./db.js";
 import type { createLocalAuth } from "./identity.js";
+import { createStandups } from "../modules/standups/service.js";
+import type { StandupRuntime } from "../modules/standups/calendar.js";
 
 /** Auth adapter must validate an actual session, never return a user from an unverified header. */
 export type ResolveIdentity = (
@@ -141,6 +143,7 @@ export function createApp(
   db: Database,
   resolveIdentity: ResolveIdentity = async () => null,
   auth?: ReturnType<typeof createLocalAuth>,
+  standupRuntime?: StandupRuntime,
 ) {
   const app = express();
   app.disable("x-powered-by");
@@ -167,6 +170,23 @@ export function createApp(
     if (!identity) throw new DomainError("UNAUTHORIZED");
     return uuid.parse(identity.userId);
   }
+  const standups = createStandups(db, standupRuntime);
+  app.get("/api/standups/current", async (req, res) => {
+    res.json({ data: await standups.current(await requireActor(req)) });
+  });
+  app.get("/api/standups", async (req, res) => {
+    res.json({
+      data: await standups.recap(await requireActor(req), req.query),
+    });
+  });
+  app.post("/api/standups/save", async (req, res) => {
+    res.json({ data: await standups.save(await requireActor(req), req.body) });
+  });
+  app.post("/api/standups/reminder", async (req, res) => {
+    res.json({
+      data: await standups.claimReminder(await requireActor(req), req.body),
+    });
+  });
   app.get("/api/farms/:farmId/notifications", async (req, res) => {
     res.json({
       data: await listNotifications(

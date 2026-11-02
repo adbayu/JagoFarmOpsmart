@@ -1,0 +1,76 @@
+# Daily Standup
+
+Menu **Ringkasan → Daily Standup** (`/standups`) menyediakan laporan pekerjaan
+harian internal per akun, tanpa harus memilih atau memiliki farm.
+
+## Alur pengguna
+
+1. Pada hari kerja sebelum 12.00 WIB, tulis **Rencana hari ini**. Pekerjaan
+   sebelumnya dan kendala opsional; setiap kolom dibatasi 6.000 karakter.
+2. Tunggu status **Draf tersimpan**. Draf otomatis disimpan setelah jeda mengetik
+   650 ms. Draf dan permintaan yang hasilnya belum pasti tetap tersedia ketika
+   berpindah menu dalam sesi aplikasi yang sama.
+3. Pilih **Kirim** untuk memublikasikan laporan pertama. Setelah itu, perubahan
+   tetap berupa draf sampai memilih **Simpan perubahan**.
+4. Pada pukul 12.00 WIB semua pengisian dan perubahan ditutup. Revisi yang belum
+   dikirim tidak mengganti publikasi terakhir. Teks yang belum tersimpan tetap
+   ditampilkan agar dapat disalin; jangan menutup tab saat koneksi bermasalah.
+5. Pilih tanggal pada **Rekap tim**, lalu **Baca laporan** untuk melihat publikasi.
+
+Status rekap: Sudah mengisi, Belum mengisi (sebelum tenggat), atau Tidak mengisi
+(sesudah tenggat). Pengingat tampil maksimal sekali per akun per hari, dapat
+dilewati melalui **Nanti**. Indikator menu/dashboard tetap tersedia.
+
+Akun baru mulai wajib pada hari kerja setelah tanggal pembuatan akun menurut WIB.
+Pengguna yang tidak login tetap masuk rekap. Rekap dimulai pada tanggal penerapan
+migration; tanggal sebelum fitur tersedia tidak menghasilkan ketidakhadiran.
+
+## Akses dan penyimpanan
+
+Semua akun terautentikasi dapat membaca publikasi seluruh pengguna lintas farm,
+sesuai keputusan untuk penggunaan internal. Draf hanya dapat dibaca/diubah akun
+pemilik. Tidak ada endpoint hapus atau retensi otomatis. Aturan akses farm lainnya
+tetap berlaku pada domain masing-masing. Signup tidak diubah; deployment harus
+mempertahankan pembatasan akses lingkungan internal yang dipilih pengguna.
+
+Mutasi memakai lock `app_user`, versi optimistis, serta receipt idempotensi per
+akun dalam satu transaksi. Waktu diperiksa kembali setelah lock; retry receipt
+yang sudah berhasil tetap dapat dikonfirmasi setelah tenggat. Draf dan publikasi
+memakai kolom terpisah. DTO rekap hanya memilih kolom publikasi. Actor berasal
+dari sesi dan mutasi melewati pelindung origin/CSRF yang sudah ada.
+
+Jika versi konflik, salin teks sebelum memilih **Muat versi terbaru**. Jika hasil
+penyimpanan belum pasti, **Coba lagi** memakai key dan payload yang sama. Response
+tidak valid diperlakukan sebagai hasil belum pasti; key tidak dibuang.
+
+## Kalender libur
+
+Provider: [Indonesian Holidays](https://github.com/ahrulsyamil/indonesian-holidays),
+`GET https://indonesian-holidays.ahrulsyamil.com/holidays/{year}` tanpa API key.
+Tipe `national_holiday` dan `joint_leave` keduanya mengecualikan kewajiban standup.
+Kalender tahunan berhasil disimpan di PostgreSQL dan disegarkan setelah 24 jam.
+Response diperiksa untuk tahun, jumlah, tipe, dan tanggal; response kosong/tidak
+valid tidak mengganti cache. Request menggunakan timeout 5 detik dan jeda retry
+5 menit setelah kegagalan dalam proses server yang sama.
+
+Jika pembaruan gagal, cache lama tetap dipakai dan UI memberi keterangan. Jika
+belum ada cache untuk tahun itu, weekday tetap dapat diisi sebelum tenggat dengan
+peringatan **Kalender libur belum terverifikasi**. Tahun yang belum didukung
+provider dapat memakai fallback ini. Publikasi lama tetap terbaca meskipun
+perubahan kalender kemudian menjadikan tanggalnya hari libur.
+
+## Deployment
+
+- Jalankan `npm run db:migrate` dengan `MIGRATION_DATABASE_URL` milik migrator.
+- Terapkan ulang `db/runtime-grants.sql` sebagai administrator jika menggunakan
+  role runtime terpisah. Tabel `daily_standup` dan `standup_holiday_calendar`
+  memerlukan UPDATE; reminder/receipt hanya SELECT dan INSERT.
+- Restart API setelah migration. `npm run dev` menerapkan migration sebelum
+  menjalankan API; preview lokal menggunakan migration yang sama.
+- Pastikan server dapat mengakses HTTPS provider dan jam sistem tersinkron.
+
+Migration `014_daily_standup.sql` diterapkan ke PostgreSQL lokal pada 2026-10-26.
+Typecheck dan build client/server lulus. Build memberi peringatan ukuran chunk
+client >500 kB. Pemeriksaan akhir dicatat pada rencana pelaksanaan. Suite
+tes dan pemeriksaan browser tidak dijalankan pada perubahan ini; belum ada bukti
+runtime untuk autosave, konflik, atau perbatasan tenggat.

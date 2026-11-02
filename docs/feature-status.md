@@ -71,13 +71,20 @@ Baseline spec P3-01 untuk registry perangkat dan ingest generik disetujui untuk
 perencanaan pada 2026-10-02 di
 `docs/superpowers/specs/2026-10-01-p3-01-iot-telemetry-design.md`; rencana implementasinya
 menunggu tinjauan di `docs/superpowers/plans/2026-10-02-p3-01-iot-telemetry.md`.
-Tidak ada konektor perangkat, pipeline RAG, model, menu, vector index, atau
+UI Education tersedia sejak 2026-10-27 pada `/education`, dengan bagian Tanya AI,
+Kelola Knowledge, dan Kelola API. Ini halaman persiapan, bukan backend RAG aktif:
+contoh pertanyaan mengisi draf lokal, tetapi pengiriman, unggah knowledge, dan
+penyimpanan konfigurasi API belum tersedia. Tidak ada jawaban atau dokumen buatan.
+Tidak ada konektor perangkat, pipeline RAG, model terhubung, vector index, atau
 endpoint telemetry produksi yang tersedia. Pilihan hosting, retensi, sumber SOP/hak
 pakai, provider/model, dan biaya masih menjadi gate.
 
 ## Yang terlihat di UI sekarang
 
 - Login dan pendaftaran akun tersedia.
+- Education menampilkan status asisten, draf pertanyaan, kebutuhan dokumen knowledge,
+  dan status koneksi API. Tiga bagiannya dapat dibuka langsung dari URL; layanan AI
+  belum aktif dan tidak menerima API key.
 - Farm manager menampilkan buat/edit/arsip dan pilihan farm aktif setelah sesi valid.
 - Halaman Anggota menampilkan anggota farm; Owner dapat menambahkan akun yang sudah
   mendaftar dengan email OpSmart yang sama.

@@ -136,6 +136,15 @@ Until these are resolved, RAG-02 ingestion and P3-04 activation remain gated. RA
 can be marked complete only after the source policy, actual environment compatibility,
 provider/vector choice, retention/deletion path, and cost boundary are recorded.
 
+## UI Education — 2026-10-27
+
+The `/education` page is available with Ask AI, Manage Knowledge, and Manage API
+sections. It states that the service is not connected. Example questions only
+fill an in-memory draft; sending is disabled with an explanation. Knowledge and
+API views describe prerequisites and unavailable capabilities. No provider is
+called, no API key is accepted or stored, and no source corpus is fabricated.
+This UI does not complete RAG-02–06 or resolve the owner decisions above.
+
 ## Technical references
 
 - [pgvector project and index options](https://github.com/pgvector/pgvector/blob/master/README.md)

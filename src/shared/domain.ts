@@ -1,5 +1,13 @@
 // Runtime values shared with validation/UI. Migration parity is tested.
 export const farmingTypes = ["FISH", "CHICKEN", "CROP"] as const;
+export const standupStatuses = ["SUBMITTED", "PENDING", "MISSED"] as const;
+export const standupDayStates = [
+  "OPEN",
+  "CLOSED",
+  "DAY_OFF",
+  "NOT_STARTED",
+  "NOT_ELIGIBLE",
+] as const;
 export const cycleStatuses = [
   "PLANNED",
   "ACTIVE",

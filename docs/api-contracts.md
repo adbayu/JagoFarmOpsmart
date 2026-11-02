@@ -216,3 +216,25 @@ Detail `/farm/fish/:unitId`, `/farm/chicken/:unitId`, dan
 Farm selection sudah aktif; tidak ada settings kosong atau Phase 2/3
 menu yang berpura-pura aktif. Client forms memakai primitives; hubungkan aria-describedby
 dan aria-invalid ke FormField error. ConfirmDialog dipakai untuk cancellation beralasan.
+
+## Daily Standup (global, sesi wajib)
+
+Tidak memakai farmId atau userId dari client. Semua mutasi menggunakan origin dan
+CSRF sesi yang sama dengan endpoint aplikasi lainnya. Response memakai `{data}`
+atau envelope error standar.
+
+| Method/path                       | Input                                                                                               | Data                                                                     |
+| --------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| GET /api/standups/current         | —                                                                                                   | Tanggal/jam server WIB, deadline, hari/kalender, status dan draf pemilik |
+| GET /api/standups?date=YYYY-MM-DD | Tanggal sampai hari ini, tahun 2000–2100                                                            | Pengguna wajib dan versi publikasi saja                                  |
+| POST /api/standups/save           | idempotencyKey UUID, date, version integer >= 0, todayPlan, previousWork, blockers, publish boolean | Draf pemilik dengan version baru dan publikasi terakhir                  |
+| POST /api/standups/reminder       | date                                                                                                | `{show: boolean}`; klaim sekali per akun/tanggal                         |
+
+Semua kolom teks maksimal 6000 karakter. `todayPlan.trim()` wajib tidak kosong
+ketika publish=true. Body strict; penambahan actor/farm ditolak. Versi 0 untuk
+draf pertama. Konflik versi atau key berbeda payload memberi 409 CONFLICT;
+hari/tenggat tidak memenuhi aturan memberi 409 STANDUP_CLOSED. Replay receipt
+berhasil mengembalikan response yang sama, termasuk setelah tenggat.
+
+Kontrak TypeScript dan validator response ada di
+`src/modules/standups/contracts.ts`. Lihat [kebijakan lengkap](daily-standup.md).

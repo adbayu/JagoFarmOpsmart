@@ -12,6 +12,16 @@ Setiap task: tulis tes penerimaan terfokus, implementasi minimal, jalankan tes t
 typecheck, build bila client/API berubah. Jangan klaim tes PostgreSQL sudah lewat hanya
 karena PGlite lewat. Commit bila proyek sudah dikelola Git; jangan mengubah repo lain.
 
+## Daily Standup internal — tambahan 2026-10-26
+
+Implementasi tersedia pada migration `014_daily_standup.sql`, modul standups,
+endpoint global berbasis sesi, dan menu `/standups`. Mencakup draf privat,
+publikasi eksplisit, rekap tanggal, reminder sekali, kalender libur tersimpan,
+serta batas 12.00 WIB. Lihat [alur dan batas verifikasi](daily-standup.md) dan
+[spesifikasi yang disetujui](superpowers/specs/2026-10-26-daily-standup-design.md).
+Nomor migration untuk rencana IoT/knowledge di bawah masih placeholder; pilih
+nomor berikutnya saat benar-benar diimplementasikan karena 014 sudah diterapkan.
+
 ## 01 — Farm registry dan farm-scoped CRUD
 
 **Status: selesai pada 2026-09-28.** Create/list/get/update/archive, pemilihan farm aktif,
@@ -419,8 +429,11 @@ Phase 2/3 tidak termasuk task ini. Integrasinya mengikuti extension points di ar
 
 ## Phase 3 — AI Assistant dengan RAG
 
-**Status: direncanakan, belum diimplementasikan.** Tidak ada ingestion pipeline,
-vector index, endpoint, atau chat assistant RAG di aplikasi saat ini. Verifikasi
+**Status per 2026-10-27: UI Education tersedia; layanan RAG belum diimplementasikan.**
+Menu `/education` memiliki Tanya AI, Kelola Knowledge, dan Kelola API melalui
+navigasi bagian. Contoh pertanyaan mengisi draf lokal; pengiriman, upload, dan
+konfigurasi provider diberi status belum tersedia. Tidak ada ingestion pipeline,
+vector index, endpoint jawaban, atau jawaban AI aktif di aplikasi saat ini. Verifikasi
 PostgreSQL Task 20 selesai. RAG-01 memiliki catatan keputusan berstatus draft;
 ingestion dan layanan RAG tetap belum diimplementasikan sampai sumber/hak pakai,
 retensi, hosting, provider/vector store, serta batas biaya diputuskan.

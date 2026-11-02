@@ -79,6 +79,21 @@
 - Agregasi memakai interval [from,toExclusive) dan timezone jelas; grup quantity menurut unit.
 - Tidak ada klaim efisiensi/circular savings tanpa data pembanding.
 
+## Daily Standup internal
+
+- Satu laporan per akun per tanggal WIB, global lintas farm; semua sesi valid
+  dapat membaca publikasi, hanya pemilik dapat membaca atau mengubah draf.
+- Hari wajib Senin–Jumat, kecuali libur nasional/cuti bersama dari kalender API.
+  Akun mulai dihitung pada hari kerja setelah tanggal pembuatan akun; login bukan
+  syarat pencantuman dalam rekap. Tidak ada ketidakhadiran sebelum fitur diterapkan.
+- Rencana hari ini wajib untuk publikasi; pekerjaan sebelumnya dan kendala opsional.
+- Autosave hanya menyimpan draf; Kirim/Simpan perubahan memublikasikan versi baru.
+- Waktu server mengunci semua penulisan laporan tepat 12.00 WIB. Revisi belum
+  terkirim tidak mengganti versi publik. Laporan tidak dapat dihapus.
+- Reminder atomik per akun/hari, dapat dilewati; status menu/dashboard tetap ada.
+- Kalender tersimpan dipakai ketika refresh gagal. Tanpa cache tahunan, weekday
+  masih dapat diisi sebelum tenggat, dengan penanda kalender belum terverifikasi.
+
 ## Cakupan enforcement sekarang
 
 Farm, unit, commodity, cycle, observation, consumption, dan direct sale melaksanakan

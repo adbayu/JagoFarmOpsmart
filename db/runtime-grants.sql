@@ -62,7 +62,9 @@ GRANT UPDATE ON TABLE
   public.sale_payment,
   public.cost_entry,
   public.cycle_cost_completion,
-  public.maggot_batch
+  public.maggot_batch,
+  public.daily_standup,
+  public.standup_holiday_calendar
 TO opsmart_runtime;
 
 REVOKE DELETE ON ALL TABLES IN SCHEMA public FROM opsmart_runtime;

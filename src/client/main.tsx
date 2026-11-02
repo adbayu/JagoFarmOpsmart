@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { flushSync } from "react-dom";
 import {
   BrowserRouter,
   Link,
@@ -8,6 +9,7 @@ import {
   Route,
   Routes,
   useLocation,
+  useNavigate,
 } from "react-router-dom";
 import { PageHeader, StatePanel } from "./components/primitives.js";
 import { pages } from "./routes.js";
@@ -38,12 +40,15 @@ import { WastePage } from "./waste.js";
 import { MaggotPage } from "./maggot.js";
 import { WaterTransferPage } from "./water-transfer.js";
 import { NotificationsPage } from "./notifications.js";
+import { StandupShell, StandupsPage, useStandups } from "./standups.js";
+import { EducationPage } from "./education.js";
 import { Icon, type IconName } from "./icons.js";
 import "./styles.css";
 
 const navIcons: Record<(typeof pages)[number]["path"], IconName> = {
   "/dashboard": "home",
   "/notifications": "bell",
+  "/standups": "calendar",
   "/farms": "farm",
   "/farm/members": "farm",
   "/farm/fish": "fish",
@@ -61,6 +66,7 @@ const navIcons: Record<(typeof pages)[number]["path"], IconName> = {
   "/finance/costs": "wallet",
   "/finance/hpp": "chart",
   "/analytics": "chart",
+  "/education": "book",
 };
 
 function ModulePage({ page }: { page: (typeof pages)[number] }) {
@@ -96,12 +102,15 @@ function Shell({
   auth,
   onLogout,
   logoutError,
+  animateEntry,
 }: {
   auth: AuthData;
   onLogout: () => void;
   logoutError: string | null;
+  animateEntry: boolean;
 }) {
   const farmState = useFarms();
+  const standups = useStandups();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const currentPage = pages.find((page) => page.path === location.pathname);
@@ -119,7 +128,7 @@ function Shell({
               ? "Detail item"
               : "Halaman");
   return (
-    <div className="app">
+    <div className={`app${animateEntry ? " app-enter" : ""}`}>
       <a className="skip-link" href="#main">
         Ke konten utama
       </a>
@@ -130,13 +139,11 @@ function Shell({
             to="/dashboard"
             onClick={() => setMenuOpen(false)}
           >
-            <span className="brand-mark">
-              <img src="/jagofarm-logo.png" alt="" />
-            </span>
-            <span className="brand-copy">
-              <strong>OpSmart</strong>
-              <small>by JagoFarm</small>
-            </span>
+            <img
+              className="brand-wordmark"
+              src="/opsmart-wordmark.png"
+              alt="OpSmart"
+            />
           </Link>
           <button
             type="button"
@@ -157,6 +164,13 @@ function Shell({
               <NavLink to={p.path} onClick={() => setMenuOpen(false)}>
                 <Icon name={navIcons[p.path]} size={19} />
                 <span>{p.label}</span>
+                {p.path === "/standups" &&
+                  standups.current?.status &&
+                  standups.current.status !== "SUBMITTED" && (
+                    <small className="standup-nav-badge">
+                      {standups.canEdit ? "Belum diisi" : "Tidak diisi"}
+                    </small>
+                  )}
               </NavLink>
             </React.Fragment>
           ))}
@@ -219,7 +233,13 @@ function Shell({
           </div>
         </header>
         <div className="content">
+          <StandupShell state={standups} />
           <Routes>
+            <Route path="/education" element={<EducationPage />} />
+            <Route
+              path="/standups"
+              element={<StandupsPage state={standups} />}
+            />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route
               path="/dashboard"
@@ -313,6 +333,8 @@ function Shell({
                     "/farm/members",
                     "/dashboard",
                     "/notifications",
+                    "/education",
+                    "/standups",
                     "/farm/fish",
                     "/farm/chicken",
                     "/farm/crops",
@@ -352,11 +374,14 @@ function Shell({
   );
 }
 function AuthGate() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [auth, setAuth] = useState<AuthData | null>(null);
   const [loading, setLoading] = useState(true);
   const [sessionError, setSessionError] = useState(false);
   const [sessionAttempt, setSessionAttempt] = useState(0);
   const [logoutError, setLogoutError] = useState<string | null>(null);
+  const [animateDashboardEntry, setAnimateDashboardEntry] = useState(true);
   useEffect(() => {
     let active = true;
     authRequest<AuthData>("me")
@@ -398,7 +423,30 @@ function AuthGate() {
   }
   function onAuth(data: AuthData) {
     setCsrfToken(data.csrfToken);
-    setAuth(data);
+    const showAuthenticatedPage = () => {
+      setAuth(data);
+      if (location.pathname === "/") {
+        navigate("/dashboard", { replace: true });
+      }
+    };
+    if (!document.startViewTransition) {
+      setAnimateDashboardEntry(true);
+      showAuthenticatedPage();
+      return;
+    }
+    const root = document.documentElement;
+    root.dataset.authTransition = "dashboard";
+    const transition = document.startViewTransition(() => {
+      flushSync(() => {
+        setAnimateDashboardEntry(false);
+        showAuthenticatedPage();
+      });
+    });
+    void transition.finished
+      .catch(() => {})
+      .finally(() => {
+        delete root.dataset.authTransition;
+      });
   }
   async function logout() {
     setLogoutError(null);
@@ -436,6 +484,7 @@ function AuthGate() {
       auth={auth}
       onLogout={() => void logout()}
       logoutError={logoutError}
+      animateEntry={animateDashboardEntry}
     />
   ) : (
     <AuthScreen onAuth={onAuth} />
