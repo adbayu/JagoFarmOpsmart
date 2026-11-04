@@ -1,4 +1,4 @@
-import pg from "pg";
+import type pg from "pg";
 /** Small SQL port: production pg and test PGlite share the same transaction services. */
 export interface Sql {
   query<T extends Record<string, unknown> = Record<string, unknown>>(
