@@ -1,7 +1,10 @@
 # Cloudflare deployment
 
-OpSmart runs as a Cloudflare Worker at `opsmart.jagofarm.dev`. The Worker serves
-the Vite build from Static Assets and forwards `/api/*` requests to one
+This configuration publishes a separate staging Worker at
+`opsmart-cloudflare-staging.hllzrd.workers.dev`. The production domain
+`opsmart.jagofarm.dev` remains attached to the existing Worker until the old
+database is exported, imported, and verified. The staging Worker serves the
+Vite build from Static Assets and forwards `/api/*` requests to one
 SQLite-backed Durable Object. That object runs the existing PostgreSQL schema
 through PGlite, with the Cloudflare-compatible `@dotdo/pglite` fork.
 
@@ -29,8 +32,11 @@ is configured.
 
 Build and run locally with `npm run dev:cloudflare`. Use `npm run
 build:cloudflare` to build the UI, run type checks, and ask Wrangler to prepare
-the Worker bundle without deploying. `npm run deploy:cloudflare` deploys the
-Worker and static assets after authentication with Wrangler.
+the Worker bundle without deploying. `npm run deploy:cloudflare` publishes the
+staging Worker and its static assets. Its `APP_ORIGIN` is set to the staging
+hostname so authentication checks use the correct origin. Production cutover
+requires changing the Worker name and `APP_ORIGIN` only after the data and
+runtime have been reviewed.
 
 The current server data is not copied by deployment. This Worker initializes a
 new database from the 15 schema migrations. There is no verified export of the
