@@ -554,6 +554,76 @@ main {
     ),
     url("/dashboard-hero.jpg") center / cover;
 }
+.page-header-operations {
+  background:
+    linear-gradient(
+      90deg,
+      #edf7e9 0%,
+      rgb(237 247 233 / 94%) 44%,
+      transparent 100%
+    ),
+    url("/dashboard-operations.jpg") center / cover;
+}
+.page-header-inventory {
+  background:
+    linear-gradient(
+      90deg,
+      #f1f7ed 0%,
+      rgb(241 247 237 / 94%) 44%,
+      transparent 100%
+    ),
+    url("/dashboard-inventory.jpg") center / cover;
+}
+.page-header-harvest {
+  background:
+    linear-gradient(
+      90deg,
+      #fbf6e9 0%,
+      rgb(251 246 233 / 94%) 44%,
+      transparent 100%
+    ),
+    url("/dashboard-harvest.jpg") center / cover;
+}
+.page-header-circular {
+  background:
+    linear-gradient(
+      90deg,
+      #eff7e8 0%,
+      rgb(239 247 232 / 94%) 44%,
+      transparent 100%
+    ),
+    url("/dashboard-circular.jpg") center / cover;
+}
+.page-header-water {
+  background:
+    linear-gradient(
+      90deg,
+      #eff8fb 0%,
+      rgb(239 248 251 / 94%) 44%,
+      transparent 100%
+    ),
+    url("/dashboard-water.jpg") center / cover;
+}
+.page-header-records {
+  background:
+    linear-gradient(
+      90deg,
+      #f6f5e9 0%,
+      rgb(246 245 233 / 94%) 44%,
+      transparent 100%
+    ),
+    url("/dashboard-records.jpg") center / cover;
+}
+.page-header-education {
+  background:
+    linear-gradient(
+      90deg,
+      #eef7e9 0%,
+      rgb(238 247 233 / 94%) 44%,
+      transparent 100%
+    ),
+    url("/dashboard-education.jpg") center / cover;
+}
 .eyebrow,
 .section-kicker {
   margin: 0 0 0.58rem;

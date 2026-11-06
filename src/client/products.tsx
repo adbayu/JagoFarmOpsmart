@@ -210,7 +210,7 @@ export function ProductsPage({
         eyebrow="Operasional"
         title="Produk"
         description="Tentukan produk hasil farm per komoditas dan grade. Harga acuan terpisah dari saldo stok."
-        visual="farm"
+        visual="harvest"
       />
       {!state.loading && !farmId && (
         <StatePanel kind="empty" title="Belum ada farm aktif">

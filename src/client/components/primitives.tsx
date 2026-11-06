@@ -15,7 +15,19 @@ export function PageHeader({
   eyebrow?: string;
   title: string;
   description: string;
-  visual?: "farm" | "fish" | "chicken" | "crop" | "module";
+  visual?:
+    | "farm"
+    | "fish"
+    | "chicken"
+    | "crop"
+    | "module"
+    | "operations"
+    | "inventory"
+    | "harvest"
+    | "circular"
+    | "water"
+    | "records"
+    | "education";
 }) {
   return (
     <header className={`page-header page-header-${visual}`}>

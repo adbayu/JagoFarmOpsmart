@@ -531,6 +531,7 @@ function StandupToday({ state }: { state: StandupState }) {
         eyebrow="Operasional internal"
         title="Daily Standup"
         description="Rencana pekerjaan harian seluruh tim. Laporan berlaku per akun dan dapat dibaca lintas farm setelah dikirim."
+        visual="operations"
       />
       {state.error && (
         <StatePanel

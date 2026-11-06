@@ -255,7 +255,7 @@ export function CycleWorkspace({
         eyebrow="Farm / Operasional"
         title="Siklus budidaya"
         description="Rencanakan siklus untuk unit ikan, ayam, dan tanaman. Catatan monitoring disimpan pada siklus aktif."
-        visual="farm"
+        visual="operations"
       />
       {state.loading && (
         <StatePanel kind="loading" title="Memuat farm">

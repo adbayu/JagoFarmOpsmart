@@ -178,7 +178,7 @@ export function AnalyticsPage({
       <PageHeader
         eyebrow="Ringkasan data"
         title="Analitik"
-        visual="crop"
+        visual="records"
         description="Bandingkan produksi bulanan dan biaya tercatat dari transaksi yang sudah diposting, dengan periode yang dapat diatur."
       />
       {!state.loading && !farmId && (

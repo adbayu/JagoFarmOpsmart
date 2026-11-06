@@ -120,7 +120,7 @@ export function HppPage({ state }: { state: ReturnType<typeof useFarms> }) {
       <PageHeader
         eyebrow="Keuangan"
         title="HPP"
-        visual="farm"
+        visual="records"
         description="Hitung biaya produksi per kilogram dari biaya siklus dan panen yang dapat ditelusuri."
       />
       {!state.loading && !farmId && (

@@ -177,7 +177,7 @@ export function HarvestPage({ state }: { state: ReturnType<typeof useFarms> }) {
       <PageHeader
         eyebrow="Operasional"
         title="Panen"
-        visual="crop"
+        visual="harvest"
         description="Catat hasil siklus per produk dan grade. Setiap baris membentuk lot dengan asal panen yang dapat ditelusuri."
       />
       {!state.loading && !farmId && (

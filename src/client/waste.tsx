@@ -201,7 +201,7 @@ export function WastePage({ state }: { state: ReturnType<typeof useFarms> }) {
       <PageHeader
         eyebrow="Operasional"
         title="Limbah organik"
-        visual="crop"
+        visual="circular"
         description="Catat sumber, jumlah, dan proses pemanfaatan limbah organik farm."
       />
       {!state.loading && !farmId && (

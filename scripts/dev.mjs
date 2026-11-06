@@ -8,23 +8,23 @@ const viteCli = fileURLToPath(
 const tsxCli = fileURLToPath(
   new URL("../node_modules/tsx/dist/cli.mjs", import.meta.url),
 );
-const database = {
-  name: process.env.POSTGRES_DB ?? "opsmart",
-  user: process.env.POSTGRES_USER ?? "opsmart",
-  password: process.env.POSTGRES_PASSWORD ?? "local-development-only",
-  port: process.env.POSTGRES_PORT ?? "5432",
-};
-const databaseUrl = new URL(
-  `postgresql://${encodeURIComponent(database.user)}:${encodeURIComponent(database.password)}@127.0.0.1:${database.port}/${encodeURIComponent(database.name)}`,
-).toString();
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  console.error(
+    "DATABASE_URL is required. Copy .env.example to .env and configure your PostgreSQL connection.",
+  );
+  process.exit(1);
+}
+const apiPort = process.env.PORT ?? "3001";
 const devEnv = {
   ...process.env,
-  APP_ORIGIN: "http://127.0.0.1:5173",
+  APP_ORIGIN: process.env.APP_ORIGIN ?? "http://127.0.0.1:5173",
   DATABASE_URL: databaseUrl,
-  MIGRATION_DATABASE_URL: databaseUrl,
+  MIGRATION_DATABASE_URL: process.env.MIGRATION_DATABASE_URL ?? databaseUrl,
   NODE_ENV: "development",
-  PORT: "3001",
+  PORT: apiPort,
 };
+const apiHealthUrl = `http://127.0.0.1:${apiPort}/api/health`;
 
 const children = new Set();
 let stopping = false;
@@ -84,7 +84,7 @@ async function waitForApi() {
   const deadline = Date.now() + 30_000;
   while (!stopping && Date.now() < deadline) {
     try {
-      const response = await fetch("http://127.0.0.1:3001/api/health", {
+      const response = await fetch(apiHealthUrl, {
         signal: AbortSignal.timeout(1_000),
       });
       if (response.ok) return true;
@@ -94,7 +94,7 @@ async function waitForApi() {
     await new Promise((resolve) => setTimeout(resolve, 300));
   }
   if (!stopping) {
-    console.error("API did not become ready at http://127.0.0.1:3001.");
+    console.error(`API did not become ready at ${apiHealthUrl}.`);
     stopAll(1);
   }
   return false;
@@ -103,42 +103,30 @@ async function waitForApi() {
 process.on("SIGINT", () => stopAll(130));
 process.on("SIGTERM", () => stopAll(143));
 
-console.log("Starting PostgreSQL in Docker...");
-const databaseExit = await runOnce("docker", [
-  "compose",
-  "up",
-  "-d",
-  "--wait",
-  "postgres",
-]);
-if (stopping || databaseExit !== 0) {
-  if (!stopping) stopAll(databaseExit || 1);
+console.log("Applying migrations to the configured PostgreSQL database...");
+const migrationExit = await runOnce(
+  process.execPath,
+  [tsxCli, "scripts/migrate.ts"],
+  devEnv,
+);
+if (stopping || migrationExit !== 0) {
+  if (!stopping) stopAll(migrationExit || 1);
 } else {
-  console.log("Applying database migrations...");
-  const migrationExit = await runOnce(
-    process.execPath,
-    [tsxCli, "scripts/migrate.ts"],
-    devEnv,
-  );
-  if (stopping || migrationExit !== 0) {
-    if (!stopping) stopAll(migrationExit || 1);
-  } else {
-    console.log("Starting API...");
-    startService(process.execPath, [tsxCli, "src/server/main.ts"], devEnv);
-    if (await waitForApi()) {
-      console.log("Starting frontend...");
-      startService(
-        process.execPath,
-        [
-          viteCli,
-          "--configLoader",
-          "runner",
-          "--host",
-          "127.0.0.1",
-          "--strictPort",
-        ],
-        devEnv,
-      );
-    }
+  console.log("Starting API...");
+  startService(process.execPath, [tsxCli, "src/server/main.ts"], devEnv);
+  if (await waitForApi()) {
+    console.log("Starting frontend...");
+    startService(
+      process.execPath,
+      [
+        viteCli,
+        "--configLoader",
+        "runner",
+        "--host",
+        "127.0.0.1",
+        "--strictPort",
+      ],
+      devEnv,
+    );
   }
 }

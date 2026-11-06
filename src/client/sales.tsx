@@ -182,7 +182,7 @@ export function SalesPage({ state }: { state: ReturnType<typeof useFarms> }) {
       <PageHeader
         eyebrow="Operasional"
         title="Penjualan"
-        visual="farm"
+        visual="harvest"
         description="Jual produk dari lot hasil panen. Nilai transaksi dihitung server; pembayaran dicatat terpisah."
       />
       {!state.loading && !farmId && (

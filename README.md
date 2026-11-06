@@ -61,26 +61,23 @@ Panduan untuk grant database, sesi produksi, proxy, dan logging ada di
 
 ## Menjalankan
 
-Prasyarat: Node >=22.12, npm, Docker Desktop aktif. Versi dependency aktual
+Prasyarat: Node >=22.12, npm, dan PostgreSQL yang sudah berjalan serta dapat
+diakses dari host (instalasi lokal atau server PostgreSQL lain). Versi dependency
 dikunci di package-lock.json.
+
+Salin `.env.example` menjadi `.env`, lalu atur `DATABASE_URL` dan `APP_ORIGIN`.
+Pastikan database sudah dibuat dan pengguna migrasi memiliki izin DDL. Untuk
+pengembangan lokal, `DATABASE_URL` juga dapat dipakai sebagai pengguna migrasi.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Buka `http://127.0.0.1:5173`. Perintah ini menyalakan PostgreSQL 17 di Docker,
-menunggu database siap, menjalankan migrasi, lalu menyalakan API dan frontend.
-Database hanya bind ke loopback dan datanya bertahan di Docker volume
-`opsmart-postgres-data`. Ctrl+C menghentikan API dan frontend; database tetap
-hidup. Untuk menghentikan container database tanpa menghapus datanya, jalankan:
-
-```sh
-npm run db:down
-```
-
-`npm run dev` menggunakan database Docker. Akun di database PGlite preview tidak
-ikut dipindahkan; buat akun lagi melalui UI setelah pertama kali menjalankan stack.
+Buka `http://127.0.0.1:5173`. `npm run dev` menjalankan migrasi ke database pada
+`MIGRATION_DATABASE_URL` (atau `DATABASE_URL` jika tidak diatur), lalu menyalakan
+API dan frontend. Perintah ini tidak menyalakan atau menghentikan PostgreSQL;
+jalankan layanan database secara terpisah. Ctrl+C menghentikan API dan frontend.
 
 Untuk menjalankan API PGlite preview saja:
 
@@ -89,10 +86,9 @@ npm run dev:server:preview
 ```
 
 API ini hanya bind ke `127.0.0.1` dan mengikuti Vite pada port 5173. Cara ini
-terpisah dari database Docker yang digunakan `npm run dev`.
+memakai PGlite lokal dan tidak memerlukan layanan PostgreSQL eksternal.
 
-Untuk memakai PostgreSQL lain, salin `.env.example` menjadi `.env`, isi
-DATABASE_URL dan APP_ORIGIN (harus sama dengan alamat browser), lalu jalankan:
+Untuk menjalankan API dan frontend secara terpisah dengan PostgreSQL host, jalankan:
 
 ```sh
 npm run db:migrate
@@ -121,9 +117,9 @@ npm run test:postgres
 PostgreSQL hanya berjalan jika `TEST_DATABASE_URL` diisi; status terkini ada di
 [verification.md](docs/verification.md).
 
-`dist/client` adalah aset frontend; host harus mengarahkan route non-file ke index.html.
-`npm start` menjalankan API hasil build di `127.0.0.1:3001`. Production reverse proxy
-mengirim `/api` ke API dan route lainnya ke frontend. Hosting/deployment belum dibuat.
+`dist` berisi `index.html` dan aset frontend; hasil build API berada di `dist/server`.
+Production reverse proxy mengirim `/api` ke API dan route lainnya ke frontend.
+`npm start` menjalankan API hasil build di `127.0.0.1:3001`.
 
 ## Education (halaman persiapan AI RAG)
 

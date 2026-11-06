@@ -160,7 +160,7 @@ export function WaterTransferPage({
       <PageHeader
         eyebrow="Operasional · Sirkular"
         title="Air kolam ke area tanam"
-        visual="crop"
+        visual="water"
         description="Catat pemindahan air kolam ke area tanam berdasarkan jumlah liter yang Anda ukur."
       />
       {!state.loading && !farmId && (

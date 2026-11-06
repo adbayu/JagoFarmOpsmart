@@ -298,7 +298,7 @@ export function SchedulePage({
         eyebrow="Operasional"
         title="Jadwal aktivitas"
         description="Rencanakan kegiatan satu kali untuk siklus aktif, lalu catat progresnya secara jelas."
-        visual="farm"
+        visual="operations"
       />
       <div className="registry-summary" aria-label="Ringkasan jadwal">
         <span>

@@ -136,7 +136,7 @@ export function InventoryPage({
         eyebrow="Operasional / Persediaan"
         title="Persediaan"
         description="Kelola item dan lot. Saldo berasal dari pergerakan stok yang tercatat."
-        visual="farm"
+        visual="inventory"
       />
       {!state.loading && !farmId && (
         <StatePanel kind="empty" title="Belum ada farm aktif">
@@ -525,7 +525,7 @@ export function InventoryItemPage({
         eyebrow="Operasional / Persediaan"
         title={item?.name ?? "Detail item"}
         description="Lihat saldo dari ledger, ubah identitas item, dan kelola lot yang terkait."
-        visual="farm"
+        visual="inventory"
       />
       <Link className="back-link" to="/inventory">
         ← Kembali ke persediaan

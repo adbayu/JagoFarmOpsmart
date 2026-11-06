@@ -181,7 +181,7 @@ export function MaggotPage({ state }: { state: ReturnType<typeof useFarms> }) {
       <PageHeader
         eyebrow="Operasional"
         title="Batch maggot"
-        visual="crop"
+        visual="circular"
         description="Telusuri input limbah, observasi, hasil panen, pemakaian, dan sisa per batch."
       />
       {!state.loading && !farmId && (

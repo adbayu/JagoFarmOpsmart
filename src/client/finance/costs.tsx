@@ -274,7 +274,7 @@ export function CostsPage({ state }: { state: ReturnType<typeof useFarms> }) {
         eyebrow="Keuangan"
         title="Biaya"
         description="Klasifikasikan biaya berdasarkan bukti. Hanya biaya produksi tertaut ke siklus yang masuk HPP."
-        visual="farm"
+        visual="records"
       />
       {!state.loading && !farmId && (
         <StatePanel kind="empty" title="Belum ada farm aktif">

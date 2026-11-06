@@ -242,6 +242,7 @@ export function NotificationsPage({
         eyebrow="Ruang kerja"
         title="Notifikasi"
         description="Pengingat jadwal dan perubahan stok untuk farm aktif."
+        visual="operations"
       />
       {state.error ? (
         <StatePanel

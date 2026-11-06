@@ -77,7 +77,7 @@ export function EducationPage() {
         eyebrow="Pengetahuan JagoFarm"
         title="Education"
         description="SOP dan panduan budidaya untuk pekerjaan farm."
-        visual="crop"
+        visual="education"
       />
       <div className="education-availability" role="status">
         <Icon name="book" size={22} />
