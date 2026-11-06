@@ -1,0 +1,43 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "opsmart-cloudflare-staging",
+  "main": "src/cloudflare/worker.ts",
+  "compatibility_date": "2026-11-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "rules": [
+    {
+      "type": "Data",
+      "globs": ["**/*.data"],
+      "fallthrough": false
+    }
+  ],
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "vars": {
+    "APP_ORIGIN": "https://opsmart-cloudflare-staging.hllzrd.workers.dev"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "OPSMART_STORE",
+        "class_name": "OpSmartStore"
+      }
+    ]
+  },
+  "exports": {
+    "OpSmartStore": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  },
+  "triggers": {
+    "crons": ["* * * * *"]
+  },
+  "observability": {
+    "enabled": true
+  }
+}
